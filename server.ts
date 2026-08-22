@@ -18,12 +18,34 @@ const DATA_FILE_PATH = path.join(__dirname, "src", "data", "officialDfeData.json
 // In-memory cached dataset
 let officialDataCache: any = null;
 
+// Term ids the dashboard actually displays. Must match ACADEMIC_TERMS in
+// src/data/cmeData.ts — duration breakdowns are only published from 2024/25.
+const ACTIVE_TERM_IDS = ["202526_Autumn", "202425_Autumn", "202425_Spring", "202425_Summer"];
+
+/**
+ * Number of distinct authorities the dashboard presents.
+ *
+ * The raw file holds 156 rows, but three are abolished county councils
+ * (Cumbria, North Yorkshire, Somerset) that carry data only for 2022/23 —
+ * North Yorkshire and Somerset also appear again under their new ONS codes.
+ * Counting raw rows reported 156 against a dashboard showing 153, so the
+ * header read "156 / 153". Count only authorities with a record for a term
+ * that is actually displayed, which is the same rule the client applies.
+ */
+function countActiveAuthorities(): number {
+  const las = officialDataCache?.localAuthorities;
+  if (!Array.isArray(las)) return 0;
+  return las.filter((la: any) =>
+    Object.keys(la?.terms || {}).some((id) => ACTIVE_TERM_IDS.includes(id))
+  ).length;
+}
+
 function loadDataFromDisk() {
   try {
     if (fs.existsSync(DATA_FILE_PATH)) {
       const raw = fs.readFileSync(DATA_FILE_PATH, "utf-8");
       officialDataCache = JSON.parse(raw);
-      console.log(`[DfE Server] Loaded official DfE dataset (${officialDataCache.localAuthorities?.length || 0} LAs, ${officialDataCache.metadata?.terms?.length || 0} terms)`);
+      console.log(`[DfE Server] Loaded official DfE dataset (${countActiveAuthorities()} LAs, ${ACTIVE_TERM_IDS.length} terms)`);
     }
   } catch (err: any) {
     console.error("[DfE Server] Failed to load data from disk:", err.message);
@@ -233,11 +255,11 @@ async function startServer() {
         datasetId: DFE_DATASET_ID,
         title: "Children missing education at census date",
         totalRecords: officialDataCache?.metadata?.totalRecords || 73710,
-        termsCount: officialDataCache?.metadata?.terms?.length || 10,
+        termsCount: ACTIVE_TERM_IDS.length,
         latestTerm: "2025/26 Autumn",
         isLive: true,
         lastSynced: officialDataCache?.metadata?.syncedAt || new Date().toISOString(),
-        authoritiesCount: officialDataCache?.localAuthorities?.length || 153,
+        authoritiesCount: countActiveAuthorities(),
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message });

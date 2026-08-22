@@ -27,9 +27,9 @@ import {
   LOCAL_AUTHORITIES_DATA,
   calculateAggregate,
   formatUKNumber,
-  REASON_LABELS,
   TOTAL_AUTHORITIES_COUNT
 } from './data/cmeData';
+import { DFE_REASON_CATEGORIES, parseCell } from './data/cmeScope';
 import { 
   DfeApiStatus, 
   testDfeApiConnection, 
@@ -250,13 +250,16 @@ export default function App() {
       const target8Plus = w8_12 + w12p;
       const recoveryYield = Math.round(target8Plus * effectiveValPerCase);
 
-      let topReason = 'Awaiting School Place';
-      if (d?.reasons) {
-        const sortedReasons = (Object.entries(d.reasons) as [keyof typeof REASON_LABELS, number][]).sort(
-          (a, b) => b[1] - a[1]
-        );
-        if (sortedReasons[0]?.[0]) {
-          topReason = REASON_LABELS[sortedReasons[0][0]]?.label || 'Awaiting School Place';
+      // Largest published DfE category, named verbatim. Previously this reported
+      // one of seven invented buckets, which renamed and merged published
+      // categories; the published category name is the only defensible value.
+      let topReason = 'Not available';
+      let topReasonCount = -1;
+      for (const reason of DFE_REASON_CATEGORIES) {
+        const value = parseCell(d?.officialReasons?.[reason]?.count).value;
+        if (value != null && value > topReasonCount) {
+          topReasonCount = value;
+          topReason = reason;
         }
       }
 

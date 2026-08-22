@@ -51,17 +51,6 @@ export type OfficialDfeDuration =
 
 export type DurationBracket = 'all' | '1-8' | '8-12' | '12+';
 
-export interface ReasonBreakdown {
-  awaitingSchoolPlace: number;
-  movedInNoPlace: number;
-  untraceableUnknown: number;
-  withdrawnDispute: number;
-  transitionFailure: number;
-  unauthorisedAbsenceDisengaged: number;
-  otherUnderInvestigation: number;
-  [key: string]: number;
-}
-
 export interface AgeCohortBreakdown {
   primaryKS1_KS2: number; // Compulsory primary (age 5-11)
   secondaryKS3_KS4: number; // Compulsory secondary (age 11-16)
@@ -95,7 +84,6 @@ export interface TermDataPoint {
   senSupportCount: number | 'c';
   ehcpCount: number | 'c';
   senProportionPercent: number; // % of CME with identified SEN/EHCP
-  reasons: ReasonBreakdown;
   officialReasons?: Record<string, { count: string | number; percent: string | number }>;
   officialDurations?: Record<string, { count: string | number; percent: string | number }>;
   officialSex?: Record<string, { count: string | number; percent: string | number }>;
@@ -127,7 +115,6 @@ export interface AggregatedStats {
     weeks12Plus: number;
   };
   senProportionPercent: number;
-  reasons: ReasonBreakdown;
   ageCohorts: AgeCohortBreakdown;
   laCount: number;
   // Deltas against previous available term

@@ -20,7 +20,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { AcademicTerm, FilterState, LocalAuthority, TableColumnSort, DurationBracket, CalculatorParams } from '../types';
-import { formatUKNumber, formatUKCurrency, REASON_LABELS, DURATION_CONFIG, TOTAL_AUTHORITIES_COUNT } from '../data/cmeData';
+import { formatUKNumber, formatUKCurrency, DURATION_CONFIG, TOTAL_AUTHORITIES_COUNT } from '../data/cmeData';
 
 interface DataTableProps {
   localAuthorities: LocalAuthority[];
@@ -190,16 +190,6 @@ export const DataTable: React.FC<DataTableProps> = ({
     ) : (
       <ArrowDown className="w-3.5 h-3.5 text-indigo-600 font-bold" />
     );
-  };
-
-  // Helper to determine primary reason for a specific LA
-  const getPrimaryReason = (la: LocalAuthority) => {
-    const data = la.termsData[term];
-    if (!data) return '—';
-    const entries = Object.entries(data.reasons) as [keyof typeof REASON_LABELS, number][];
-    entries.sort((a, b) => b[1] - a[1]);
-    const topKey = entries[0]?.[0];
-    return topKey ? REASON_LABELS[topKey]?.label : '—';
   };
 
   return (

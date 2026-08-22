@@ -36,10 +36,9 @@ import {
   Tooltip, 
   Legend 
 } from 'recharts';
-import { AcademicTerm, CalculatorParams, LocalAuthority, MainDashboardTab, ReasonBreakdown, RiskLevel } from '../types';
+import { AcademicTerm, CalculatorParams, LocalAuthority, MainDashboardTab, RiskLevel } from '../types';
 import { 
-  ACADEMIC_TERMS, 
-  REASON_LABELS, 
+  ACADEMIC_TERMS,
   DURATION_CONFIG,
   OFFICIAL_20_REASONS,
   REASON_COLORS,

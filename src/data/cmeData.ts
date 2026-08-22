@@ -1,4 +1,4 @@
-import { AcademicTerm, AggregatedStats, LocalAuthority, ReasonBreakdown, Region, TermDataPoint } from '../types';
+import { AcademicTerm, AggregatedStats, LocalAuthority, Region, TermDataPoint } from '../types';
 import officialDataJson from './officialDfeData.json';
 
 // The ten real DfE regions present in the data. Excludes 'All England' — that is a
@@ -110,43 +110,13 @@ export const REASON_COLORS: Record<string, string> = {
   'Other': '#475569'
 };
 
-// Legacy 7-grouping adapter for backward compatibility in simplified views
-export const REASON_LABELS: Record<string, { label: string; description: string; color: string }> = {
-  awaitingSchoolPlace: {
-    label: 'School Application Awaiting Outcome',
-    description: 'Pupil has applied for a school place and is awaiting admission panel or allocation.',
-    color: '#2563eb',
-  },
-  movedInNoPlace: {
-    label: 'Moved into Area - No School Place',
-    description: 'Pupil relocated into the local authority boundary without securing an advance school place.',
-    color: '#0284c7',
-  },
-  untraceableUnknown: {
-    label: 'Untraceable / Unknown Destination',
-    description: 'Pupil is absent with address unknown or destination not recorded.',
-    color: '#64748b',
-  },
-  withdrawnDispute: {
-    label: 'Elective Home Ed Query / Place Dispute',
-    description: 'Unsuitable home education, school preference disputes, or parental refusal to register.',
-    color: '#d97706',
-  },
-  transitionFailure: {
-    label: 'Waiting School Start / Application Delay',
-    description: 'Offered place awaiting start or did not apply at compulsory age.',
-    color: '#16a34a',
-  },
-  unauthorisedAbsenceDisengaged: {
-    label: 'Challenging Attendance Order / Health Need',
-    description: 'Challenging attendance orders or medical/mental health absence.',
-    color: '#e11d48',
-  },
-  otherUnderInvestigation: {
-    label: 'Other Reasons / Moved Outside Authority',
-    description: 'Believed to have moved to another LA/country, or other recorded reasons.',
-    color: '#475569',
-  },
+// Presentation colours for the compliance scope tiers defined in cmeScope.ts.
+// Keyed by ScopeTierId; the tiers themselves are data, these are display only.
+export const SCOPE_TIER_COLORS: Record<string, string> = {
+  abroad: '#dc2626',
+  untraceable: '#64748b',
+  movedLa: '#4f46e5',
+  outOfScope: '#cbd5e1',
 };
 
 // Transform the official JSON into typed LocalAuthority objects
@@ -212,15 +182,7 @@ export const LOCAL_AUTHORITIES_DATA: LocalAuthority[] = dedupedAuthorities.map((
       ? Number(((totalCME / compulsoryPupils) * 1000).toFixed(2))
       : 'c';
 
-    // Group reasons for legacy components
     const r = rawTerm.reasons || {};
-    const awaitingPlace = parseVal(r['School application awaiting outcome']?.count) + parseVal(r['Offered school place but not yet accepted']?.count);
-    const movedIn = parseVal(r['Moved in from another local authority']?.count) + parseVal(r['Moved in from another country']?.count);
-    const untraceable = parseVal(r['Unknown']?.count) + parseVal(r['Not recorded']?.count);
-    const withdrawn = parseVal(r['Unsuitable elective home education']?.count) + parseVal(r['Did not get school preference']?.count) + parseVal(r['Parental decision not to register at school']?.count);
-    const transition = parseVal(r['Waiting school start']?.count) + parseVal(r['Did not apply for school place at compulsory school age']?.count);
-    const disengaged = parseVal(r['Challenging school attendance order']?.count) + parseVal(r['Mental health']?.count) + parseVal(r['Physical health']?.count);
-    const other = parseVal(r['Other']?.count) + parseVal(r['Believed to have moved to another country']?.count) + parseVal(r['Believed to have moved to another local authority']?.count);
 
     // Year groups
     const yg = rawTerm.yearGroups || {};
@@ -254,15 +216,6 @@ export const LOCAL_AUTHORITIES_DATA: LocalAuthority[] = dedupedAuthorities.map((
       senProportionPercent: (totalCME && totalCME !== 'c' && totalCME > 0)
         ? Number((((parseVal(r['School dissatisfaction SEND']?.count) + parseVal(r['Difficulty accessing suitable school place']?.count)) / totalCME) * 100).toFixed(1))
         : 0,
-      reasons: {
-        awaitingSchoolPlace: awaitingPlace,
-        movedInNoPlace: movedIn,
-        untraceableUnknown: untraceable,
-        withdrawnDispute: withdrawn,
-        transitionFailure: transition,
-        unauthorisedAbsenceDisengaged: disengaged,
-        otherUnderInvestigation: other,
-      },
       officialReasons: rawTerm.reasons || {},
       officialDurations: rawTerm.durations || {},
       officialSex: rawTerm.sex || {},
@@ -294,6 +247,110 @@ export const LOCAL_AUTHORITIES_DATA: LocalAuthority[] = dedupedAuthorities.map((
 // every previously hardcoded 153 across the app.
 export const TOTAL_AUTHORITIES_COUNT = LOCAL_AUTHORITIES_DATA.length;
 
+type RawBreakdown = Record<string, { count?: string | number; percent?: string | number }>;
+
+export interface PublishedBreakdown {
+  /** Verbatim published reason cells, keyed by the DfE category name. */
+  reasons: RawBreakdown;
+  /** Verbatim published duration cells, keyed by the DfE band name. */
+  durations: RawBreakdown;
+  /** Published total as a raw string, so 'low' / 'x' / 'z' survive to parseCell. */
+  totalRaw: string | number;
+  /** Where these figures came from, so the UI can be honest about provenance. */
+  source: 'national' | 'region' | 'authority' | 'summed';
+}
+
+/**
+ * Resolve the published reason and duration breakdowns for the current selection.
+ *
+ * DfE publish National, Regional and LA rows separately, so wherever a published
+ * row exists we read it verbatim rather than summing authorities — DfE uprate
+ * national figures for non-response and do not uprate LA figures, so the two do
+ * not reconcile. Summing is a last resort for an arbitrary subset of authorities.
+ *
+ * Feed the result to scopeCohort() / buildReasonTable() in cmeScope.ts. This
+ * function deliberately performs no scoping or estimation of its own.
+ */
+export function getPublishedBreakdown(
+  term: AcademicTerm,
+  opts: { la?: LocalAuthority | null; region?: Region; authorities?: LocalAuthority[] } = {}
+): PublishedBreakdown {
+  const termKey = mapTermKey(term);
+  const { la, region, authorities } = opts;
+
+  if (la) {
+    const d = la.termsData[term];
+    return {
+      reasons: (d?.officialReasons as RawBreakdown) || {},
+      durations: (d?.officialDurations as RawBreakdown) || {},
+      totalRaw: d?.totalRaw ?? 0,
+      source: 'authority',
+    };
+  }
+
+  if (region && region !== 'All England') {
+    const row = (officialDataJson.regions as any)?.[region]?.[termKey];
+    if (row) {
+      return {
+        reasons: row.reasons || {},
+        durations: row.durations || {},
+        totalRaw: row.totalRaw ?? row.total ?? 0,
+        source: 'region',
+      };
+    }
+  }
+
+  if (!authorities) {
+    const row = (officialDataJson.national as any)?.[termKey];
+    return {
+      reasons: row?.reasons || {},
+      durations: row?.durations || {},
+      totalRaw: row?.totalRaw ?? row?.total ?? 0,
+      source: 'national',
+    };
+  }
+
+  // Arbitrary subset: sum the authority rows. Markers are not imputed — a key
+  // stays 'low' only when every contributing cell was 'low' and nothing numeric
+  // was added, so a real-but-unquantified count is never shown as a hard 0.
+  const sumInto = (pick: (d: any) => RawBreakdown): RawBreakdown => {
+    const totals: Record<string, number> = {};
+    const lowOnly: Record<string, boolean> = {};
+    for (const a of authorities) {
+      const src = pick(a.termsData[term]) || {};
+      for (const [key, cell] of Object.entries(src)) {
+        const raw = String(cell?.count ?? '').trim();
+        const n = Number(raw);
+        if (raw !== '' && !Number.isNaN(n)) {
+          totals[key] = (totals[key] || 0) + n;
+          lowOnly[key] = false;
+        } else if (raw === 'low') {
+          if (!(key in totals)) totals[key] = 0;
+          if (!(key in lowOnly)) lowOnly[key] = true;
+        }
+      }
+    }
+    const out: RawBreakdown = {};
+    for (const key of Object.keys(totals)) {
+      out[key] = { count: totals[key] === 0 && lowOnly[key] ? 'low' : totals[key] };
+    }
+    return out;
+  };
+
+  let total = 0;
+  for (const a of authorities) {
+    const v = a.termsData[term]?.totalCME;
+    if (typeof v === 'number') total += v;
+  }
+
+  return {
+    reasons: sumInto((d) => d?.officialReasons),
+    durations: sumInto((d) => d?.officialDurations),
+    totalRaw: total,
+    source: 'summed',
+  };
+}
+
 /**
  * Calculate aggregate totals for national or regional filters from authentic DfE published rows
  */
@@ -319,16 +376,6 @@ export function calculateAggregate(
   let weeks8To12 = 0;
   let weeks12Plus = 0;
 
-  const reasonsSum: ReasonBreakdown = {
-    awaitingSchoolPlace: 0,
-    movedInNoPlace: 0,
-    untraceableUnknown: 0,
-    withdrawnDispute: 0,
-    transitionFailure: 0,
-    unauthorisedAbsenceDisengaged: 0,
-    otherUnderInvestigation: 0,
-  };
-
   const ageCohortsSum = {
     primaryKS1_KS2: 0,
     secondaryKS3_KS4: 0,
@@ -351,10 +398,6 @@ export function calculateAggregate(
     weeks8To12 += w8_12;
     weeks12Plus += w12p;
     longTermMissingCount += w12p;
-
-    Object.keys(reasonsSum).forEach((k) => {
-      reasonsSum[k] += data.reasons[k] || 0;
-    });
 
     ageCohortsSum.primaryKS1_KS2 += data.ageCohorts.primaryKS1_KS2;
     ageCohortsSum.secondaryKS3_KS4 += data.ageCohorts.secondaryKS3_KS4;
@@ -395,7 +438,6 @@ export function calculateAggregate(
       weeks12Plus,
     },
     senProportionPercent: 14.5,
-    reasons: reasonsSum,
     ageCohorts: ageCohortsSum,
     laCount: authorities.length,
     prevTerm,

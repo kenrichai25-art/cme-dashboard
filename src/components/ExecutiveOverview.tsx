@@ -48,9 +48,11 @@ import {
   calculateAggregate,
   formatUKNumber,
   formatUKCurrency,
-  REASON_LABELS,
+  getPublishedBreakdown,
+  SCOPE_TIER_COLORS,
   TOTAL_AUTHORITIES_COUNT
 } from '../data/cmeData';
+import { scopeCohort } from '../data/cmeScope';
 
 interface ExecutiveOverviewProps {
   currentStats: AggregatedStats;
@@ -134,19 +136,36 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
     .sort((a, b) => b.totalCME - a.totalCME)
     .slice(0, 10);
 
-  // 4. Statutory Reason Breakdown for national
-  const reasonsData = (Object.entries(currentStats.reasons) as [keyof typeof REASON_LABELS, number][])
-    .map(([key, count]) => {
-      const numericCount = typeof count === 'number' ? count : 0;
-      return {
-        key,
-        label: REASON_LABELS[key]?.label || key,
-        color: REASON_LABELS[key]?.color || '#FE5729',
-        count: numericCount,
-        percent: currentStats.totalCME > 0 ? ((numericCount / currentStats.totalCME) * 100).toFixed(1) : '0',
-      };
-    })
-    .sort((a, b) => b.count - a.count);
+  // 4. Compliance scope tiers, from the published reason breakdown.
+  // Published counts only — no estimation, no cross-tabulation with duration.
+  const selectedLA = filters.selectedLACode
+    ? LOCAL_AUTHORITIES_DATA.find((la) => la.code === filters.selectedLACode) ?? null
+    : null;
+  const scopeBreakdown = getPublishedBreakdown(filters.selectedTerm, {
+    la: selectedLA,
+    region: filters.selectedRegion,
+  });
+  const scopeCohortData = scopeCohort(
+    scopeBreakdown.reasons,
+    scopeBreakdown.durations,
+    scopeBreakdown.totalRaw,
+    8
+  );
+  const inScopePublishedTotal = scopeCohortData.tiers
+    .filter((t) => t.tier.countsTowardYield)
+    .reduce((sum, t) => sum + t.publishedCount, 0);
+  const reasonsData = scopeCohortData.tiers.map((t) => ({
+    key: t.tier.id,
+    label: t.tier.label,
+    color: SCOPE_TIER_COLORS[t.tier.id],
+    count: t.publishedCount,
+    suppressedCells: t.suppressedCells,
+    rationale: t.tier.rationale,
+    percent:
+      scopeCohortData.totalCME > 0
+        ? ((t.publishedCount / scopeCohortData.totalCME) * 100).toFixed(1)
+        : '0',
+  }));
 
   const nationalTarget8Plus = nationalStats.durationWeeks.weeks8To12 + nationalStats.durationWeeks.weeks12Plus;
   const nationalTotalYield = nationalTarget8Plus * effectiveValPerCase;
@@ -408,21 +427,24 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
           <div>
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-[#1C1C1C]">
-                Statutory Reasons for Missing Education
+                Compliance Scope Tiers
               </h3>
               <span className="text-xs text-neutral-400 font-medium">DfE Census</span>
             </div>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Official statutory categorization of missing children across England.
+              Published reason counts grouped by Child Benefit relevance. Published figures, not estimates.
             </p>
 
-            {/* Visual list of reasons */}
+            {/* Visual list of scope tiers */}
             <div className="mt-4 space-y-3">
-              {reasonsData.slice(0, 5).map((r, index) => (
+              {reasonsData.map((r, index) => (
                 <div key={r.key} className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs sm:text-sm">
-                    <span className="font-semibold text-neutral-800 truncate max-w-[240px]" title={r.label}>
+                    <span className="font-semibold text-neutral-800 truncate max-w-[240px]" title={r.rationale}>
                       {r.label}
+                      {r.suppressedCells > 0 && (
+                        <span className="text-neutral-400 font-normal"> +{r.suppressedCells} low</span>
+                      )}
                     </span>
                     <span className="font-semibold text-[#1C1C1C]">
                       {formatUKNumber(r.count)} <span className="text-neutral-400 font-normal">({r.percent}%)</span>
@@ -444,12 +466,12 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
           </div>
 
           <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500">
-            <span>Primary Driver: <strong className="text-[#1C1C1C]">{reasonsData[0]?.label || 'Awaiting School Place'}</strong></span>
+            <span>In scope: <strong className="text-[#1C1C1C]">{formatUKNumber(inScopePublishedTotal)}</strong></span>
             <button
               onClick={() => onNavigateTab('dfe-intelligence')}
               className="text-[#FE5729] hover:text-[#E0461B] font-bold hover:underline cursor-pointer"
             >
-              View All 7 Causes →
+              View All 20 Categories →
             </button>
           </div>
         </div>

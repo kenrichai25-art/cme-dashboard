@@ -34,24 +34,23 @@ import {
   AcademicTerm, 
   AggregatedStats, 
   FilterState, 
-  LocalAuthority, 
-  ReasonBreakdown,
+  LocalAuthority,
   DurationBracket,
   CalculatorParams
 } from '../types';
 import { 
   ACADEMIC_TERMS, 
   ALL_REGIONS, 
-  LOCAL_AUTHORITIES_DATA, 
-  REASON_LABELS, 
+  LOCAL_AUTHORITIES_DATA,
   DURATION_CONFIG,
-  OFFICIAL_20_REASONS,
-  REASON_COLORS,
   calculateAggregate,
   formatUKNumber,
   formatGBP,
+  getPublishedBreakdown,
+  SCOPE_TIER_COLORS,
   TOTAL_AUTHORITIES_COUNT
 } from '../data/cmeData';
+import { scopeCohort, buildReasonTable, SCOPE_TIERS } from '../data/cmeScope';
 import officialDataJson from '../data/officialDfeData.json';
 
 interface VisualisationSuiteProps {
@@ -76,7 +75,7 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
   const [rankingMode, setRankingMode] = useState<'la' | 'region'>('la');
   const [activeReasonIndex, setActiveReasonIndex] = useState<number | null>(null);
   const [selectedChartTab, setSelectedChartTab] = useState<'trajectory' | 'duration' | 'reasons'>('trajectory');
-  const [reasonDisplayMode, setReasonDisplayMode] = useState<'official20' | 'grouped7'>('official20');
+  const [reasonDisplayMode, setReasonDisplayMode] = useState<'tiers' | 'all20'>('tiers');
 
   const durationFilter = filters.durationFilter;
   const excludeSEN = !!filters.excludeSEN;
@@ -217,86 +216,42 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
     };
   }).sort((a, b) => b.displayCount - a.displayCount);
 
-  // 3. Reasons Breakdown Data - Extract verbatim published official reasons
-  const getAuthenticReasons = () => {
-    const termKey = filters.selectedTerm.replace('/', '').replace(' ', '_');
-    
-    // For single LA
-    if (currentLA) {
-      const laTerm = currentLA.termsData[filters.selectedTerm];
-      const officialR = laTerm?.officialReasons || {};
-      const totalLaCme = typeof laTerm?.totalCME === 'number' ? laTerm.totalCME : 0;
+  // 3. Compliance scope tiers + full published reason table.
+  // Both read the verbatim published breakdown via cmeScope.ts. No published
+  // category is renamed, merged or dropped, and nothing here is an estimate:
+  // these are published reason counts, not reason-by-duration figures.
+  const publishedBreakdown = getPublishedBreakdown(filters.selectedTerm, {
+    la: currentLA,
+    region: filters.selectedRegion,
+  });
 
-      if (reasonDisplayMode === 'official20') {
-        return OFFICIAL_20_REASONS.map((reasonName) => {
-          const rawObj = officialR[reasonName];
-          const rawCount = rawObj?.count;
-          const numCount = (rawCount === 'low' || rawCount === 'x' || rawCount === 'z' || !rawCount) ? 0 : Number(rawCount);
-          const percent = totalLaCme > 0 ? ((numCount / totalLaCme) * 100).toFixed(1) : '0.0';
-          return {
-            name: reasonName,
-            count: numCount,
-            rawCount: rawCount || '0',
-            percent: Number(percent),
-            color: REASON_COLORS[reasonName] || '#64748b',
-          };
-        }).filter(item => item.count > 0 || item.rawCount === 'low').sort((a, b) => b.count - a.count);
-      }
+  const scopedCohort = scopeCohort(
+    publishedBreakdown.reasons,
+    publishedBreakdown.durations,
+    publishedBreakdown.totalRaw,
+    8
+  );
 
-      // Grouped 7 view
-      return (Object.keys(REASON_LABELS) as Array<keyof ReasonBreakdown>).map((key) => {
-        const count = laTerm?.reasons?.[key] || 0;
-        const percent = totalLaCme > 0 ? ((count / totalLaCme) * 100).toFixed(1) : '0.0';
-        return {
-          name: REASON_LABELS[key].label,
-          count,
-          rawCount: String(count),
-          percent: Number(percent),
-          color: REASON_LABELS[key].color,
-          description: REASON_LABELS[key].description,
-        };
-      }).filter(item => item.count > 0).sort((a, b) => b.count - a.count);
-    }
+  // Scope tier view: the three in-scope tiers plus Not in scope.
+  const tierData = scopedCohort.tiers.map((t) => ({
+    name: t.tier.label,
+    count: t.publishedCount,
+    percent:
+      scopedCohort.totalCME > 0
+        ? Number(((t.publishedCount / scopedCohort.totalCME) * 100).toFixed(1))
+        : 0,
+    color: SCOPE_TIER_COLORS[t.tier.id],
+    description: t.tier.rationale,
+    suppressedCells: t.suppressedCells,
+    inScope: t.tier.countsTowardYield,
+  }));
 
-    // National or Region aggregate
-    const isNational = filters.selectedRegion === 'All England';
-    const nationalItem = (officialDataJson.national as any)?.[termKey];
-    const regionItem = isNational ? null : (officialDataJson.regions as any)?.[filters.selectedRegion]?.[termKey];
+  // Reference table: all 20 published categories, verbatim, tier-marked.
+  const reasonTable = buildReasonTable(publishedBreakdown.reasons, publishedBreakdown.totalRaw);
+  const tierLabelFor = (tierId: string) =>
+    SCOPE_TIERS.find((t) => t.id === tierId)?.label ?? 'Not in scope';
 
-    const sourceObj = isNational ? nationalItem?.reasons : regionItem?.reasons;
-    const totalPublished = isNational ? nationalItem?.total : regionItem?.total || currentStats.totalCME;
-
-    if (reasonDisplayMode === 'official20' && sourceObj) {
-      return OFFICIAL_20_REASONS.map((reasonName) => {
-        const rawObj = sourceObj[reasonName];
-        const numCount = rawObj ? Number(rawObj.count) || 0 : 0;
-        const percent = totalPublished > 0 ? ((numCount / totalPublished) * 100).toFixed(1) : (rawObj?.percent ? Number(rawObj.percent) : 0);
-        return {
-          name: reasonName,
-          count: numCount,
-          rawCount: rawObj?.count || '0',
-          percent: Number(percent),
-          color: REASON_COLORS[reasonName] || '#64748b',
-        };
-      }).filter(item => item.count > 0).sort((a, b) => b.count - a.count);
-    }
-
-    // Fallback grouped view
-    return (Object.keys(REASON_LABELS) as Array<keyof ReasonBreakdown>).map((key) => {
-      const count = currentStats.reasons[key] || 0;
-      const percent = currentStats.totalCME > 0 ? ((count / currentStats.totalCME) * 100).toFixed(1) : '0.0';
-      return {
-        name: REASON_LABELS[key].label,
-        count,
-        rawCount: String(count),
-        percent: Number(percent),
-        color: REASON_LABELS[key].color,
-        description: REASON_LABELS[key].description,
-      };
-    }).filter(item => item.count > 0).sort((a, b) => b.count - a.count);
-  };
-
-  const reasonsData = getAuthenticReasons();
+  const reasonsData = tierData;
 
   // 4. Duration Breakdown Data for current active scope
   const target8to12Yield = Math.round(currentStats.durationWeeks.weeks8To12 * effectiveValPerCase);
@@ -602,33 +557,74 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
             <div>
               <h3 className="text-sm font-extrabold text-[#1C1C1C] flex items-center gap-2 font-display">
                 <PieChartIcon className="w-4 h-4 text-[#FE5729]" />
-                <span>Statutory Reason Distribution</span>
+                <span>Compliance Scope Tiers</span>
               </h3>
               <p className="text-xs text-neutral-400 mt-0.5">
-                Official DfE Breakdown • {currentStats.selectedLabel} ({filters.selectedTerm})
+                Published DfE reason counts • {currentStats.selectedLabel} ({filters.selectedTerm})
               </p>
             </div>
 
             <div className="flex items-center space-x-1 bg-[#F4F4F6] p-1 rounded-full text-xs">
               <button
-                onClick={() => setReasonDisplayMode('official20')}
+                onClick={() => setReasonDisplayMode('tiers')}
                 className={`px-3 py-1 rounded-full transition-all font-bold cursor-pointer ${
-                  reasonDisplayMode === 'official20' ? 'bg-[#FE5729] text-white shadow-xs' : 'text-neutral-600 hover:text-neutral-900'
+                  reasonDisplayMode === 'tiers' ? 'bg-[#FE5729] text-white shadow-xs' : 'text-neutral-600 hover:text-neutral-900'
+                }`}
+              >
+                Scope Tiers
+              </button>
+              <button
+                onClick={() => setReasonDisplayMode('all20')}
+                className={`px-3 py-1 rounded-full transition-all font-bold cursor-pointer ${
+                  reasonDisplayMode === 'all20' ? 'bg-[#FE5729] text-white shadow-xs' : 'text-neutral-600 hover:text-neutral-900'
                 }`}
               >
                 20 DfE Categories
               </button>
-              <button
-                onClick={() => setReasonDisplayMode('grouped7')}
-                className={`px-3 py-1 rounded-full transition-all font-bold cursor-pointer ${
-                  reasonDisplayMode === 'grouped7' ? 'bg-[#FE5729] text-white shadow-xs' : 'text-neutral-600 hover:text-neutral-900'
-                }`}
-              >
-                Grouped View
-              </button>
             </div>
           </div>
 
+          {reasonDisplayMode === 'all20' ? (
+            /* Reference table: all 20 published categories, verbatim.
+               Published counts only — no estimates and no yield. */
+            <div className="mt-5 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-white">
+                  <tr className="text-left text-neutral-400 border-b border-neutral-200">
+                    <th className="py-1.5 pr-2 font-bold">Published category</th>
+                    <th className="py-1.5 px-2 font-bold">Scope tier</th>
+                    <th className="py-1.5 pl-2 font-bold text-right">Count</th>
+                    <th className="py-1.5 pl-2 font-bold text-right">%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reasonTable.map((row) => (
+                    <tr key={row.reason} className="border-b border-neutral-100 last:border-0">
+                      <td className="py-1.5 pr-2 text-neutral-800 font-medium">{row.reason}</td>
+                      <td className="py-1.5 px-2">
+                        <span
+                          className="inline-flex items-center gap-1.5 text-neutral-600"
+                          title={row.inScope ? 'Counts toward the in-scope cohort' : 'Not a Child Benefit matter'}
+                        >
+                          <span
+                            className="w-2 h-2 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: SCOPE_TIER_COLORS[row.tierId] }}
+                          />
+                          {tierLabelFor(row.tierId)}
+                        </span>
+                      </td>
+                      <td className="py-1.5 pl-2 text-right font-mono font-bold text-neutral-900">
+                        {row.cell.marker ? row.cell.marker : formatUKNumber(row.cell.value ?? 0)}
+                      </td>
+                      <td className="py-1.5 pl-2 text-right font-mono text-neutral-400">
+                        {row.sharePercent == null ? '—' : `${row.sharePercent}%`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mt-5 items-center">
             <div className="md:col-span-5 h-56 flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
@@ -676,11 +672,16 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
                 >
                   <div className="flex items-center space-x-2 truncate">
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: reason.color }} />
-                    <span className="text-neutral-800 font-medium truncate" title={reason.name}>
+                    <span className="text-neutral-800 font-medium truncate" title={reason.description}>
                       {reason.name}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2 flex-shrink-0 font-mono text-[11px]">
+                    {reason.suppressedCells > 0 && (
+                      <span className="text-neutral-400" title="Authorities reporting 'low': a count that rounds to 0 but is not 0">
+                        +{reason.suppressedCells} low
+                      </span>
+                    )}
                     <span className="font-bold text-neutral-900">{formatUKNumber(reason.count)}</span>
                     <span className="text-neutral-400">({reason.percent}%)</span>
                   </div>
@@ -688,6 +689,7 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
               ))}
             </div>
           </div>
+          )}
         </div>
 
         <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500">
@@ -696,7 +698,7 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
             <span>Published by DfE as an independent 1D statutory distribution on census day</span>
           </span>
           <span className="font-semibold text-neutral-800">
-            Total Classified: {formatUKNumber(reasonsData.reduce((acc, r) => acc + r.count, 0))}
+            Published Total: {formatUKNumber(scopedCohort.totalCME)}
           </span>
         </div>
       </div>
