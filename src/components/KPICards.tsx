@@ -20,7 +20,6 @@ interface KPICardsProps {
   showBenchmark: boolean;
   durationFilter?: DurationBracket;
   calculatorParams?: CalculatorParams;
-  excludeSEN?: boolean;
 }
 
 export const KPICards: React.FC<KPICardsProps> = ({
@@ -31,7 +30,6 @@ export const KPICards: React.FC<KPICardsProps> = ({
   showBenchmark,
   durationFilter = 'all',
   calculatorParams = { recoveryPerCase: 2800, strikeRate: 0.75 },
-  excludeSEN = false,
 }) => {
   const isSuppressed = currentLA && currentLA.termsData[stats.term]?.totalCME === 'c';
 
@@ -98,11 +96,6 @@ export const KPICards: React.FC<KPICardsProps> = ({
               <Users className="w-4 h-4 text-[#FE5729]" />
               <span className="font-bold text-[#1C1C1C]">Total Active CME Caseload</span>
             </span>
-            {excludeSEN && (
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Mainstream
-              </span>
-            )}
           </div>
 
           <div className="flex items-end justify-between mt-2">

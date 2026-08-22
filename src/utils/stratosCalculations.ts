@@ -13,7 +13,6 @@ import { scopeCohort, computeYield } from '../data/cmeScope';
 export const DEFAULT_CALCULATOR_PARAMS: CalculatorParams = {
   recoveryPerCase: 2800,
   strikeRate: 0.75,
-  cohortMode: 'all',
   // Abroad only, at 8 weeks: the default matches the Child Benefit rule that
   // entitlement for a claimant abroad generally ends after 8 weeks.
   includeTiers: ['abroad'],
@@ -96,7 +95,6 @@ export function computeSTRATOSLEAs(
   const {
     recoveryPerCase,
     strikeRate,
-    cohortMode = 'all',
     includeTiers = ['abroad'],
     durationThreshold = 8,
   } = params;
@@ -118,20 +116,10 @@ export function computeSTRATOSLEAs(
     const dispute = parseDfENumber(officialReasons['Unsuitable elective home education']?.count, 0) + 
                     parseDfENumber(officialReasons['Did not get school preference']?.count, 0);
 
-    let totalCme = rawTotalCme;
-    let w1_8 = rawW1_8;
-    let w8_12 = rawW8_12;
-    let w12_plus = rawW12_plus;
-
-    if (cohortMode === 'exclude-sen') {
-      const senCount = parseDfENumber(officialReasons['School dissatisfaction SEND']?.count, 0) +
-                       parseDfENumber(officialReasons['Difficulty accessing suitable school place']?.count, 0);
-      const senMultiplier = rawTotalCme > 0 ? Math.max(0, (rawTotalCme - senCount) / rawTotalCme) : 1;
-      totalCme = Math.round(rawTotalCme * senMultiplier);
-      w1_8 = Math.round(rawW1_8 * senMultiplier);
-      w8_12 = Math.round(rawW8_12 * senMultiplier);
-      w12_plus = Math.round(rawW12_plus * senMultiplier);
-    }
+    const totalCme = rawTotalCme;
+    const w1_8 = rawW1_8;
+    const w8_12 = rawW8_12;
+    const w12_plus = rawW12_plus;
 
     const cmeRate = compulsoryPupils > 0 ? Number(((totalCme / compulsoryPupils) * 1000).toFixed(2)) : rawCmeRate;
 
@@ -271,6 +259,10 @@ export function computeStratosRegionalRollup(
       // Scoped per-authority estimate, not the published duration bands.
       const targetCases = inRegion.reduce((acc, curr) => acc + curr.target_cases_count, 0);
       const totalPotential = inRegion.reduce((acc, curr) => acc + curr.total_potential_calc, 0);
+      // Scoped band split, summed from the authorities. Deriving these from the
+      // published duration counts would reintroduce the unscoped all-reasons yield.
+      const w8_12Value = inRegion.reduce((acc, curr) => acc + curr.w8_12_value_calc, 0);
+      const w12PlusValue = inRegion.reduce((acc, curr) => acc + curr.w12_plus_value_calc, 0);
 
       const criticalCount = inRegion.filter((la) => la.risk_level === 'Critical').length;
       const highCount = inRegion.filter((la) => la.risk_level === 'High').length;
@@ -282,11 +274,16 @@ export function computeStratosRegionalRollup(
         w8_12_count: w8_12,
         w12_plus_count: w12_plus,
         target_cases: targetCases,
+        w8_12_value: w8_12Value,
+        w12_plus_value: w12PlusValue,
         total_potential: totalPotential,
         avg_potential_per_lea: leaCount > 0 ? Math.round(totalPotential / leaCount) : 0,
         critical_count: criticalCount,
         high_count: highCount,
       };
     })
-    .sort((a, b) => b.total_potential - a.total_potential);
+    // Ordered by published caseload, which does not move when the tier or
+    // threshold controls change. Sorting by total_potential made the regional
+    // bars reshuffle on every toggle, so nothing could be tracked across changes.
+    .sort((a, b) => b.total_cme - a.total_cme);
 }

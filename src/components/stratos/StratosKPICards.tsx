@@ -9,13 +9,23 @@ import {
 import { StratosNationalAggregate } from '../../types';
 import { formatGBP } from '../../utils/stratosCalculations';
 import { EstimateMarker } from './EstimateMarker';
+import { DurationThreshold } from '../../data/cmeScope';
 
 interface StratosKPICardsProps {
   stats: StratosNationalAggregate;
   termLabel: string;
+  /** Active absence threshold. At 12 weeks the 8–12 band is out of scope. */
+  durationThreshold?: DurationThreshold;
 }
 
-export const StratosKPICards: React.FC<StratosKPICardsProps> = ({ stats, termLabel }) => {
+export const StratosKPICards: React.FC<StratosKPICardsProps> = ({
+  stats,
+  termLabel,
+  durationThreshold = 8,
+}) => {
+  // At a 12-week threshold the 8–12 week band carries no yield by definition,
+  // so the card is greyed out and labelled rather than showing a bare £0.
+  const band8to12OutOfScope = durationThreshold === 12;
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
       {/* 1. Total Projected Recovery Potential */}
@@ -88,23 +98,47 @@ export const StratosKPICards: React.FC<StratosKPICardsProps> = ({ stats, termLab
       </div>
 
       {/* 4. 8-12 Weeks Early Alert Pool */}
-      <div className="bg-white rounded-3xl border border-neutral-200/80 shadow-xs p-5 sm:p-6 relative overflow-hidden transition-all hover:border-amber-300 hover:shadow-sm">
+      <div className={`rounded-3xl border shadow-xs p-5 sm:p-6 relative overflow-hidden transition-all ${
+        band8to12OutOfScope
+          ? 'bg-neutral-50 border-neutral-200/70'
+          : 'bg-white border-neutral-200/80 hover:border-amber-300 hover:shadow-sm'
+      }`}>
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider">
+          <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+            band8to12OutOfScope ? 'text-neutral-400' : 'text-neutral-500'
+          }`}>
             8–12 Wks Travel Expiry
+            {!band8to12OutOfScope && <EstimateMarker />}
           </span>
-          <div className="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${
+            band8to12OutOfScope
+              ? 'bg-neutral-100 text-neutral-400 border-neutral-200'
+              : 'bg-amber-50 text-amber-600 border-amber-100'
+          }`}>
             <Clock className="w-4 h-4" />
           </div>
         </div>
         <div className="mt-3 flex items-baseline gap-2">
-          <span className="text-3xl sm:text-4xl lg:text-[2.25rem] font-semibold text-amber-600 tracking-tight leading-none">
-            {formatGBP(stats.total_w8_12_value, true)}
+          <span className={`text-3xl sm:text-4xl lg:text-[2.25rem] font-semibold tracking-tight leading-none ${
+            band8to12OutOfScope ? 'text-neutral-300' : 'text-amber-600'
+          }`}>
+            {band8to12OutOfScope ? '—' : formatGBP(stats.total_w8_12_value, true)}
           </span>
         </div>
-        <div className="mt-3.5 flex items-center justify-between text-xs text-neutral-500 border-t border-neutral-100 pt-2.5">
-          <span>{stats.total_w8_12_count.toLocaleString('en-GB')} Cases:</span>
-          <span className="font-semibold text-amber-600">Early Intervention</span>
+        <div className="mt-3.5 flex items-center justify-between text-xs border-t border-neutral-100 pt-2.5 text-neutral-500">
+          {band8to12OutOfScope ? (
+            <span
+              className="text-neutral-400"
+              title="Child Benefit for a claimant abroad generally ends after 8 weeks. At a 12-week threshold this band falls below the rule and carries no yield."
+            >
+              Not in scope at 12 weeks
+            </span>
+          ) : (
+            <>
+              <span>{stats.total_w8_12_count.toLocaleString('en-GB')} Cases:</span>
+              <span className="font-semibold text-amber-600">Early Intervention</span>
+            </>
+          )}
         </div>
       </div>
 

@@ -30,8 +30,6 @@ interface HeaderProps {
   onOpenMethodology: () => void;
   onOpenApiExplorer: () => void;
   onExportCurrentView: () => void;
-  excludeSEN: boolean;
-  onToggleExcludeSEN: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -43,8 +41,6 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenMethodology,
   onOpenApiExplorer,
   onExportCurrentView,
-  excludeSEN,
-  onToggleExcludeSEN,
 }) => {
   return (
     <header className="bg-white border-b border-neutral-200/80 shadow-xs sticky top-0 z-30">
@@ -61,7 +57,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="text-neutral-600 hidden md:inline">•</span>
             <span className="inline-flex items-center text-emerald-400 text-[11px] font-semibold">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1.5" />
-              {excludeSEN ? 'Mainstream Cohort Active (SEN Excluded)' : 'CME Financial Impact Suite Active'}
+              CME Financial Impact Suite Active
             </span>
           </div>
 
@@ -97,31 +93,9 @@ export const Header: React.FC<HeaderProps> = ({
             </p>
           </div>
 
-          {/* Action buttons with Global SEN Button */}
+          {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-2">
             
-            {/* Global SEN / EHCP Toggle - Controls Entire Dashboard */}
-            <button
-              id="header-global-sen-toggle-btn"
-              onClick={onToggleExcludeSEN}
-              className={`inline-flex items-center px-3.5 py-1.5 text-xs font-bold rounded-full transition-all shadow-xs gap-2 cursor-pointer active:scale-95 text-white ${
-                excludeSEN
-                  ? 'bg-emerald-600 hover:bg-emerald-500 ring-2 ring-emerald-400/30'
-                  : 'bg-red-600 hover:bg-red-500 shadow-xs'
-              }`}
-              title="Global SEN Control: Exclude pupils with SEN Support or EHCP (~30%) across all tabs to focus on mainstream compliance and recovery"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-white" />
-              <span>Exclude SEN (~30%)</span>
-              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                excludeSEN
-                  ? 'bg-emerald-800/80 text-emerald-100'
-                  : 'bg-red-800/90 text-white'
-              }`}>
-                {excludeSEN ? 'ON' : 'OFF'}
-              </span>
-            </button>
-
             <button
               id="header-pull-england-btn"
               onClick={onPullEnglandData}

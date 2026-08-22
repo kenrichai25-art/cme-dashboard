@@ -328,9 +328,9 @@ export const StratosComplianceGuide: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="p-3 bg-white rounded-lg border border-slate-200">
-              <h5 className="font-bold text-slate-900 mb-1 text-xs">SEN & Medical Protection Filter</h5>
+              <h5 className="font-bold text-slate-900 mb-1 text-xs">SEND & Medical Protection</h5>
               <p className="text-slate-600">
-                Pupils with an Education, Health and Care Plan (EHCP) or documented complex medical needs (~30% of total national CME caseload) are subject to specialized review. Where non-attendance stems from provision failure rather than unnotified departure, benefit entitlement remains fully protected.
+                Pupils with an Education, Health and Care Plan (EHCP) or documented complex medical needs are subject to specialized review. Where non-attendance stems from provision failure rather than unnotified departure, benefit entitlement remains fully protected. The DfE census carries no SEND or EHCP characteristic, so this cohort cannot be sized from this data set.
               </p>
             </div>
 

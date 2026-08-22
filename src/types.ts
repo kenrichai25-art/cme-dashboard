@@ -83,9 +83,6 @@ export interface TermDataPoint {
   longTermMissingCount: number | 'c'; // > 12 weeks
   longTermMissingPercent: number; // calculated % of CME
   durationWeeks: DurationBreakdown;
-  senSupportCount: number | 'c';
-  ehcpCount: number | 'c';
-  senProportionPercent: number; // % of CME with identified SEN/EHCP
   officialReasons?: Record<string, { count: string | number; percent: string | number }>;
   officialDurations?: Record<string, { count: string | number; percent: string | number }>;
   officialSex?: Record<string, { count: string | number; percent: string | number }>;
@@ -116,7 +113,6 @@ export interface AggregatedStats {
     weeks8To12: number;
     weeks12Plus: number;
   };
-  senProportionPercent: number;
   ageCohorts: AgeCohortBreakdown;
   laCount: number;
   // Deltas against previous available term
@@ -124,7 +120,6 @@ export interface AggregatedStats {
   totalCMEDeltaPercent?: number;
   ratePer1000DeltaPercent?: number;
   longTermPercentDelta?: number;
-  senPercentDelta?: number;
 }
 
 export interface FilterState {
@@ -135,7 +130,6 @@ export interface FilterState {
   compareBenchmark: boolean;
   benchmarkType: 'national' | 'regional';
   searchQuery: string;
-  excludeSEN?: boolean; // Exclude SEN/EHCP pupils from DfE Intelligence views
 }
 
 export interface TableColumnSort {
@@ -149,8 +143,7 @@ export interface TableColumnSort {
     | 'weeks1To8' 
     | 'weeks8To12' 
     | 'weeks12Plus' 
-    | 'longTermMissingPercent' 
-    | 'senProportionPercent';
+    | 'longTermMissingPercent';
   direction: 'asc' | 'desc';
 }
 
@@ -160,12 +153,9 @@ export interface TableColumnSort {
 
 export type RiskLevel = 'Critical' | 'High' | 'Medium' | 'Low';
 
-export type StratosCohortMode = 'all' | 'exclude-sen';
-
 export interface CalculatorParams {
   recoveryPerCase: number; // e.g. 2800 (Range: 1000 to 6000)
   strikeRate: number;      // e.g. 0.75 (Range: 0.10 to 1.00)
-  cohortMode?: StratosCohortMode; // Target cohort filter (All, Exclude SEN)
   /** Scope tiers counted toward yield. Defaults to abroad only. */
   includeTiers?: ScopeTierId[];
   /** Duration threshold in weeks for the Child Benefit absence rule. */
@@ -243,6 +233,9 @@ export interface StratosRegionalRollup {
   w8_12_count: number;
   w12_plus_count: number;
   target_cases: number;
+  // Scoped yield split across the published bands (estimates, like total_potential).
+  w8_12_value: number;
+  w12_plus_value: number;
   total_potential: number;
   avg_potential_per_lea: number;
   critical_count: number;

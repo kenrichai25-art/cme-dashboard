@@ -64,7 +64,7 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onNavigateTab }) => {
       purpose: 'Gives managers, directors, and policy leads an instant snapshot of national figures without needing to dig into technical spreadsheets.',
       whatYouSee: [
         `Total Active CME count across all ${TOTAL_AUTHORITIES_COUNT} English Local Authorities.`,
-        'High-risk 12+ weeks persistent absences and the SEN / EHCP percentage.',
+        'High-risk 12+ weeks persistent absences and the compliance scope tiers.',
         'National 4-term historical trajectory chart (from 2024/25 to 2025/26).',
         'Top 10 English Government Regions breakdown and Top High-Exposure Councils.',
       ],
@@ -92,7 +92,6 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onNavigateTab }) => {
       ],
       howToUse: [
         'Use the Duration Pills (1–8w, 8–12w, 12+w) to focus charts on specific absence lengths.',
-        'Toggle "Exclude SEN (~30%)" to see purely mainstream pupil statistics.',
         'Click on any bar chart or local authority to inspect individual trends.',
       ],
     },
@@ -216,11 +215,6 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onNavigateTab }) => {
         'Under UK Child Benefit regulations, families who travel abroad or leave the country can only continue receiving Child Benefit for up to 8 weeks. Once a child is missing from education for 8 to 12 weeks (or 12+ weeks), there is a strong likelihood that the family has permanently relocated or is abroad without informing authorities. These cases represent the prime target for compliance checks and recovery of improper payments.',
     },
     {
-      question: 'What does "Exclude SEN (~30%)" mean, and where is it controlled?',
-      answer:
-        'Around 30% of children recorded as CME have identified Special Educational Needs (SEN) or an Education, Health and Care Plan (EHCP). In many cases, these children are not missing from home; they are simply waiting for a specialist school place to become available. You can toggle "Exclude SEN (~30%)" globally using the dedicated button in the top navigation header to filter out these placement delays across all tabs and focus strictly on mainstream unverified absences.',
-    },
-    {
       question: 'How is the "Modelled Yield" or "Financial Impact" calculated?',
       answer:
         'The formula multiplies the number of actionable cases (pupils missing 8+ weeks) by the Average Recovery per Case (£2,800 standard) and the Strike Rate (75% standard). For example, 100 actionable cases × £2,800 × 75% = £210,000 in projected recoverable public funds.',
@@ -255,12 +249,6 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onNavigateTab }) => {
       definition: 'The combined total of 8–12 weeks and 12+ weeks absences. This is the actionable cohort where statutory benefit eligibility has likely ended.',
       icon: ShieldAlert,
       color: 'bg-amber-50 text-amber-700',
-    },
-    {
-      term: 'SEN / EHCP Cohort',
-      definition: 'Children with Special Educational Needs or an Education, Health and Care Plan (~30% of CME), often waiting for specialist placements.',
-      icon: ShieldCheck,
-      color: 'bg-purple-50 text-purple-700',
     },
     {
       term: 'Strike Rate',

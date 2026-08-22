@@ -69,8 +69,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     filters.selectedLACode !== null ||
     filters.selectedTerm !== '2025/26 Autumn' ||
     filters.durationFilter !== 'all' ||
-    filters.searchQuery !== '' ||
-    !!filters.excludeSEN;
+    filters.searchQuery !== '';
 
   const durationOptions: { id: DurationBracket; label: string; countHint?: string }[] = [
     { id: 'all', label: 'All Durations (1+ wks)' },

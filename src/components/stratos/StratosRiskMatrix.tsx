@@ -24,16 +24,12 @@ interface StratosRiskMatrixProps {
   leas: LEACombined[];
   onSelectLA: (laCode: string) => void;
   academicYear: string;
-  excludeSEN?: boolean;
-  onToggleExcludeSEN?: (exclude: boolean) => void;
 }
 
 export const StratosRiskMatrix: React.FC<StratosRiskMatrixProps> = ({
   leas,
   onSelectLA,
   academicYear,
-  excludeSEN = false,
-  onToggleExcludeSEN,
 }) => {
   const [selectedRiskFilter, setSelectedRiskFilter] = useState<RiskLevel | 'All'>('Critical');
   const [matrixSearch, setMatrixSearch] = useState('');
@@ -74,12 +70,6 @@ export const StratosRiskMatrix: React.FC<StratosRiskMatrixProps> = ({
                 <ShieldAlert className="w-3.5 h-3.5 mr-1.5" />
                 Statutory Risk Stratification
               </div>
-              {excludeSEN && (
-                <div className="inline-flex items-center px-3 py-1 rounded-full bg-[#FE5729]/20 text-[#FE5729] font-extrabold text-xs border border-[#FE5729]/30">
-                  <Users className="w-3.5 h-3.5 mr-1.5" />
-                  SEN / EHCP Excluded (~30%)
-                </div>
-              )}
             </div>
             <h2 className="text-xl font-extrabold tracking-tight text-white font-display">
               LEA Compliance Risk Tier Matrix
@@ -90,26 +80,6 @@ export const StratosRiskMatrix: React.FC<StratosRiskMatrixProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {/* Quick Exclude SEN Toggle in Header */}
-            {onToggleExcludeSEN && (
-              <button
-                id="matrix-header-exclude-sen-toggle"
-                onClick={() => onToggleExcludeSEN(!excludeSEN)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer border ${
-                  excludeSEN
-                    ? 'bg-[#FE5729] text-white border-[#FE5729] shadow-sm'
-                    : 'bg-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-700 border-neutral-700'
-                }`}
-                title="Toggle exclusion of Special Educational Needs & EHCP cases"
-              >
-                <Users className="w-4 h-4" />
-                <span>Exclude SEN / EHCP</span>
-                {excludeSEN && (
-                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                )}
-              </button>
-            )}
-
             <div className="flex items-center space-x-3 bg-neutral-900/90 p-3 rounded-2xl border border-neutral-700/70">
               <div className="text-right">
                 <div className="text-[10px] uppercase tracking-wider text-neutral-400 font-medium">Critical & High</div>
@@ -131,31 +101,6 @@ export const StratosRiskMatrix: React.FC<StratosRiskMatrixProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Active SEN Exclusion Banner if enabled */}
-      {excludeSEN && (
-        <div className="bg-[#FFF3F0] border border-[#FE5729]/30 rounded-2xl p-4 flex items-center justify-between gap-3 text-xs text-[#1C1C1C] shadow-xs">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-white text-[#FE5729] rounded-xl border border-[#FE5729]/20 shadow-2xs">
-              <Users className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="font-extrabold text-[#1C1C1C]">SEN / EHCP Exclusion Active:</span>{' '}
-              <span className="text-neutral-600">
-                Authorities in the risk matrix are assessed strictly on mainstream & untraceable CME cases. Special Educational Needs & EHCP cohorts (~30%) have been removed from risk thresholds and potential yield computations.
-              </span>
-            </div>
-          </div>
-          {onToggleExcludeSEN && (
-            <button
-              onClick={() => onToggleExcludeSEN(false)}
-              className="text-xs text-[#FE5729] hover:underline font-bold shrink-0 cursor-pointer"
-            >
-              Include All Cases
-            </button>
-          )}
-        </div>
-      )}
 
       {/* 4 Risk Tier Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -271,24 +216,6 @@ export const StratosRiskMatrix: React.FC<StratosRiskMatrixProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            {/* Exclude SEN button in Toolbar */}
-            {onToggleExcludeSEN && (
-              <button
-                id="matrix-toolbar-exclude-sen-btn"
-                onClick={() => onToggleExcludeSEN(!excludeSEN)}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 text-xs font-bold rounded-full border transition-colors cursor-pointer ${
-                  excludeSEN
-                    ? 'bg-[#FE5729]/10 border-[#FE5729]/30 text-[#FE5729]'
-                    : 'bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50'
-                }`}
-                title="Exclude Special Educational Needs & EHCP cases (~30%)"
-              >
-                <Users className="w-3.5 h-3.5 text-[#FE5729]" />
-                <span>Exclude SEN (~30%)</span>
-                {excludeSEN && <span className="w-1.5 h-1.5 rounded-full bg-[#FE5729]" />}
-              </button>
-            )}
-
             <div className="relative min-w-[200px]">
               <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input

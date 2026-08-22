@@ -54,8 +54,10 @@ export const StratosChartsSection: React.FC<StratosChartsSectionProps> = ({
   const regionalChartData = regionalRollups.map((r) => ({
     name: r.region.replace(' and the ', ' & ').replace(' of ', ' of '),
     fullRegion: r.region,
-    w12_plus_value: r.w12_plus_count * nationalAggregate.effective_value_per_opened_case,
-    w8_12_value: r.w8_12_count * nationalAggregate.effective_value_per_opened_case,
+    // Scoped values from the rollup. Multiplying the published duration counts
+    // by the per-case value here would show the unscoped all-reasons yield.
+    w12_plus_value: r.w12_plus_value,
+    w8_12_value: r.w8_12_value,
     total_potential: r.total_potential,
     target_cases: r.target_cases,
     lea_count: r.lea_count,

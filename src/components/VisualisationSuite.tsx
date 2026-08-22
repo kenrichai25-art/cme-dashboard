@@ -78,7 +78,6 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
   const [reasonDisplayMode, setReasonDisplayMode] = useState<'tiers' | 'all20'>('tiers');
 
   const durationFilter = filters.durationFilter;
-  const excludeSEN = !!filters.excludeSEN;
   const effectiveValPerCase = calculatorParams.recoveryPerCase * calculatorParams.strikeRate;
 
   // 1. Prepare Trajectory Data across all 4 published terms (2024/25 Autumn through 2025/26 Autumn)
@@ -91,8 +90,8 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
     : LOCAL_AUTHORITIES_DATA.filter((la) => la.region === filters.selectedRegion);
 
   const trajectoryData = chronologicalTerms.map((term) => {
-    const agg = calculateAggregate(trajectoryLAs, term, 'Trajectory Cohort', excludeSEN);
-    const natAgg = calculateAggregate(LOCAL_AUTHORITIES_DATA, term, 'National Aggregate', excludeSEN);
+    const agg = calculateAggregate(trajectoryLAs, term, 'Trajectory Cohort');
+    const natAgg = calculateAggregate(LOCAL_AUTHORITIES_DATA, term, 'National Aggregate');
 
     const shortTerm = term
       .replace('2024/25 Autumn', 'Aut 24')
@@ -177,7 +176,7 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
 
   const regionalData = ALL_REGIONS.map((region) => {
     const lasInReg = LOCAL_AUTHORITIES_DATA.filter((la) => la.region === region);
-    const agg = calculateAggregate(lasInReg, termForComparison, region, excludeSEN);
+    const agg = calculateAggregate(lasInReg, termForComparison, region);
 
     const target8Plus = agg.durationWeeks.weeks8To12 + agg.durationWeeks.weeks12Plus;
     const yieldVal = Math.round(target8Plus * effectiveValPerCase);
@@ -214,7 +213,11 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
       weeks12Plus: agg.durationWeeks.weeks12Plus,
       isSelected: filters.selectedRegion === region,
     };
-  }).sort((a, b) => b.displayCount - a.displayCount);
+  })
+    // Ordered by published caseload so the bars keep a stable position when the
+    // duration or tier controls change. Sorting by displayCount reshuffled them
+    // on every toggle, making regions impossible to track across changes.
+    .sort((a, b) => b.totalCME - a.totalCME);
 
   // 3. Compliance scope tiers + full published reason table.
   // Both read the verbatim published breakdown via cmeScope.ts. No published

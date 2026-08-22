@@ -39,7 +39,8 @@ import {
   FilterState, 
   LocalAuthority, 
   MainDashboardTab, 
-  Region 
+  Region,
+  StratosNationalAggregate
 } from '../types';
 import {
   ACADEMIC_TERMS,
@@ -52,7 +53,8 @@ import {
   SCOPE_TIER_COLORS,
   TOTAL_AUTHORITIES_COUNT
 } from '../data/cmeData';
-import { scopeCohort } from '../data/cmeScope';
+import { scopeCohort, SCOPE_TIERS } from '../data/cmeScope';
+import { EstimateMarker } from './stratos/EstimateMarker';
 
 interface ExecutiveOverviewProps {
   currentStats: AggregatedStats;
@@ -62,6 +64,8 @@ interface ExecutiveOverviewProps {
   onSelectLA: (code: string) => void;
   onNavigateTab: (tab: MainDashboardTab) => void;
   calculatorParams: CalculatorParams;
+  /** Scoped national yield, shared with the Financial Impact tab so both agree. */
+  stratosNationalAggregate: StratosNationalAggregate;
 }
 
 export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
@@ -72,13 +76,22 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
   onSelectLA,
   onNavigateTab,
   calculatorParams,
+  stratosNationalAggregate,
 }) => {
   const effectiveValPerCase = calculatorParams.recoveryPerCase * calculatorParams.strikeRate;
+
+  // Which tiers and threshold the yield figures on this page reflect.
+  const activeScopeSummary = (() => {
+    const ids = calculatorParams.includeTiers ?? ['abroad'];
+    const threshold = calculatorParams.durationThreshold ?? 8;
+    const labels = SCOPE_TIERS.filter((t) => ids.includes(t.id)).map((t) => t.label);
+    return `${labels.length ? labels.join(' + ') : 'no tiers'}, ${threshold}w+`;
+  })();
 
   // 1. National Longitudinal Trajectory across terms
   const chronologicalTerms = [...ACADEMIC_TERMS].reverse();
   const trajectoryData = chronologicalTerms.map((term) => {
-    const agg = calculateAggregate(LOCAL_AUTHORITIES_DATA, term, 'England National', !!filters.excludeSEN);
+    const agg = calculateAggregate(LOCAL_AUTHORITIES_DATA, term, 'England National');
     const shortTerm = term
       .replace('2024/25 Autumn', 'Aut 24')
       .replace('2024/25 Spring', 'Spr 25')
@@ -99,7 +112,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
   // 2. Regional Rollup Data for Executive Comparison
   const regionalSummary = ALL_REGIONS.map((reg) => {
     const regLAs = LOCAL_AUTHORITIES_DATA.filter((la) => la.region === reg);
-    const agg = calculateAggregate(regLAs, filters.selectedTerm, reg, !!filters.excludeSEN);
+    const agg = calculateAggregate(regLAs, filters.selectedTerm, reg);
     const target8Plus = agg.durationWeeks.weeks8To12 + agg.durationWeeks.weeks12Plus;
     const estRecovery = Math.round(target8Plus * effectiveValPerCase);
 
@@ -167,8 +180,11 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
         : '0',
   }));
 
-  const nationalTarget8Plus = nationalStats.durationWeeks.weeks8To12 + nationalStats.durationWeeks.weeks12Plus;
-  const nationalTotalYield = nationalTarget8Plus * effectiveValPerCase;
+  // Scoped yield, from the same aggregate the Financial Impact tab renders.
+  // This previously multiplied the published 8+ week duration count by the
+  // per-case value, which counted every reason and reported about £37.6m.
+  const nationalTarget8Plus = stratosNationalAggregate.total_target_cases;
+  const nationalTotalYield = stratosNationalAggregate.total_projected_potential;
 
   return (
     <div className="space-y-6">
@@ -270,28 +286,6 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
           </div>
         </div>
 
-        {/* Card 3: Identified SEN / EHCP */}
-        <div className="bg-[#1C1C1C] text-white p-5 sm:p-6 rounded-3xl shadow-md border border-neutral-800/90 hover:border-neutral-700 transition-all relative overflow-hidden group flex flex-col justify-between">
-          <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-purple-500/10 rounded-full blur-xl pointer-events-none group-hover:bg-purple-500/20 transition-all" />
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
-                SEN / EHCP Cohort
-              </span>
-              <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400 shrink-0">
-                <ShieldAlert className="w-4 h-4" />
-              </div>
-            </div>
-            <p className="text-3xl sm:text-4xl lg:text-[2.6rem] font-semibold text-white tracking-tight leading-none">
-              {nationalStats.senProportionPercent.toFixed(1)}%
-            </p>
-          </div>
-          <div className="mt-4 pt-3 border-t border-neutral-800/80 flex items-center justify-between text-xs text-neutral-400">
-            <span>Specialist provision:</span>
-            <span className="font-semibold text-purple-300">~{formatUKNumber(Math.round(nationalStats.totalCME * (nationalStats.senProportionPercent / 100)))}</span>
-          </div>
-        </div>
-
         {/* Card 4: Spotlight Hero Metric Card (Modelled Recovery Yield) */}
         <div className="bg-[#1C1C1C] text-white p-5 sm:p-6 rounded-3xl shadow-lg border border-[#FE5729]/40 hover:border-[#FE5729]/70 transition-all flex flex-col justify-between relative overflow-hidden group">
           <div className="absolute -right-6 -bottom-6 w-28 h-28 bg-[#FE5729]/25 rounded-full blur-xl pointer-events-none group-hover:bg-[#FE5729]/35 transition-all" />
@@ -300,8 +294,11 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
               <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
                 CME Financial Impact Potential
               </span>
-              <div className="px-2.5 py-0.5 rounded-full bg-[#FE5729] text-white text-[10px] font-extrabold tracking-wide shadow-2xs">
-                SPOTLIGHT
+              <div className="flex items-center gap-1.5">
+                <EstimateMarker />
+                <div className="px-2.5 py-0.5 rounded-full bg-[#FE5729] text-white text-[10px] font-extrabold tracking-wide shadow-2xs">
+                  SPOTLIGHT
+                </div>
               </div>
             </div>
             <p className="text-3xl sm:text-4xl lg:text-[2.6rem] font-semibold text-[#FE5729] tracking-tight leading-none">
@@ -309,7 +306,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
             </p>
           </div>
           <div className="mt-4 pt-3 border-t border-neutral-800/80 flex items-center justify-between text-xs text-neutral-300 font-medium">
-            <span>Actionable ({formatUKNumber(nationalTarget8Plus)} cases)</span>
+            <span>Actionable ({formatUKNumber(nationalTarget8Plus)} cases) &middot; {activeScopeSummary}</span>
             <TrendingUp className="w-4 h-4 text-[#FE5729]" />
           </div>
         </div>

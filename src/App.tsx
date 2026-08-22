@@ -146,32 +146,28 @@ export default function App() {
       ? 'England (National)'
       : `${filters.selectedRegion} Region`;
 
-    return calculateAggregate(scopedLAs, filters.selectedTerm, label, !!filters.excludeSEN);
-  }, [scopedLAs, filters.selectedTerm, currentLA, filters.selectedRegion, filters.excludeSEN]);
+    return calculateAggregate(scopedLAs, filters.selectedTerm, label);
+  }, [scopedLAs, filters.selectedTerm, currentLA, filters.selectedRegion]);
 
   // National benchmark for DfE tab
   const nationalStats = useMemo(() => {
-    return calculateAggregate(LOCAL_AUTHORITIES_DATA, filters.selectedTerm, 'National Benchmark', !!filters.excludeSEN);
-  }, [filters.selectedTerm, filters.excludeSEN]);
+    return calculateAggregate(LOCAL_AUTHORITIES_DATA, filters.selectedTerm, 'National Benchmark');
+  }, [filters.selectedTerm]);
 
   // Regional benchmark (if a specific region or LA is selected)
   const regionalStats = useMemo(() => {
     const reg = currentLA ? currentLA.region : filters.selectedRegion;
     if (reg === 'All England') return undefined;
     const regLAs = LOCAL_AUTHORITIES_DATA.filter((la) => la.region === reg);
-    return calculateAggregate(regLAs, filters.selectedTerm, `${reg} Region Benchmark`, !!filters.excludeSEN);
-  }, [currentLA, filters.selectedRegion, filters.selectedTerm, filters.excludeSEN]);
+    return calculateAggregate(regLAs, filters.selectedTerm, `${reg} Region Benchmark`);
+  }, [currentLA, filters.selectedRegion, filters.selectedTerm]);
 
   // =========================================================
   // STRATOS Live Model Computations (all LEAs + National + Regional)
   // =========================================================
   const stratosCombinedLEAs = useMemo(() => {
-    const effectiveParams: CalculatorParams = {
-      ...calculatorParams,
-      cohortMode: filters.excludeSEN ? 'exclude-sen' : calculatorParams.cohortMode || 'all',
-    };
-    return computeSTRATOSLEAs(LOCAL_AUTHORITIES_DATA, filters.selectedTerm, effectiveParams);
-  }, [filters.selectedTerm, calculatorParams, filters.excludeSEN]);
+    return computeSTRATOSLEAs(LOCAL_AUTHORITIES_DATA, filters.selectedTerm, calculatorParams);
+  }, [filters.selectedTerm, calculatorParams]);
 
   // Human-readable summary of which tiers and threshold the yield figures reflect.
   const activeScopeSummary = useMemo(() => {
@@ -204,7 +200,6 @@ export default function App() {
       compareBenchmark: true,
       benchmarkType: 'national',
       searchQuery: '',
-      excludeSEN: false,
     });
     showToast(`Scope reset to All England (${TOTAL_AUTHORITIES_COUNT} Authorities)`);
   };
@@ -237,16 +232,12 @@ export default function App() {
       'Actionable Target Cohort (8+ Wks)',
       'Modelled Recovery Yield (£)',
       'Missing 1-8 Weeks Count',
-      'Identified SEN Support Count',
-      'EHCP Count',
-      'Total SEN / EHCP (%)',
       'Primary Recorded Cause',
     ];
 
     const rows = lasToExport.map((la) => {
       const d = la.termsData[term];
-      const senPercent = d?.senProportionPercent || 30;
-      const factor = filters.excludeSEN ? Math.max(0.1, (100 - senPercent) / 100) : 1.0;
+      const factor = 1.0;
 
       const rawTotal = typeof d?.totalCME === 'number' ? d.totalCME : 0;
       const totalCME = Math.round(rawTotal * factor);
@@ -286,9 +277,6 @@ export default function App() {
         target8Plus,
         recoveryYield,
         d?.durationWeeks?.weeks1To8 === 'c' ? '"c (<5)"' : w1_8,
-        d?.senSupportCount === 'c' ? '"c (<5)"' : filters.excludeSEN ? 0 : d?.senSupportCount || 0,
-        d?.ehcpCount === 'c' ? '"c (<5)"' : filters.excludeSEN ? 0 : d?.ehcpCount || 0,
-        filters.excludeSEN ? 0 : d?.senProportionPercent || 0,
         `"${topReason}"`,
       ].join(',');
     });
@@ -317,8 +305,6 @@ export default function App() {
         onOpenMethodology={() => setIsMethodologyOpen(true)}
         onOpenApiExplorer={() => setIsApiExplorerOpen(true)}
         onExportCurrentView={handleExportCSV}
-        excludeSEN={!!filters.excludeSEN}
-        onToggleExcludeSEN={() => handleFilterChange({ excludeSEN: !filters.excludeSEN })}
       />
 
       {/* Syncing Progress Banner (if active) */}
@@ -363,6 +349,7 @@ export default function App() {
             onSelectLA={handleSelectLA}
             onNavigateTab={setActiveTab}
             calculatorParams={calculatorParams}
+            stratosNationalAggregate={stratosNationalAggregate}
           />
         )}
 
@@ -403,28 +390,6 @@ export default function App() {
               </div>
             )}
 
-            {/* Active SEN Excluded Notification Banner */}
-            {filters.excludeSEN && (
-              <div className="bg-emerald-50/90 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-emerald-950 shadow-xs">
-                <div className="flex items-center space-x-3">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse flex-shrink-0" />
-                  <div>
-                    <span className="font-extrabold text-emerald-900">
-                      SEN / EHCP Cohort Excluded: Focusing on Actionable Untraceable / Mainstream CME
-                    </span>
-                    <p className="text-[11px] text-emerald-800 mt-0.5">
-                      Special Educational Needs &amp; EHCP cases (~30% of statutory CME) have been filtered out to isolate mainstream, untraceable, or left-the-country cases where commercial tracing and CME financial impact yields are highest.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleFilterChange({ excludeSEN: false })}
-                  className="self-start sm:self-auto px-3.5 py-1.5 bg-white border border-emerald-300 hover:bg-emerald-100/60 text-emerald-900 font-bold rounded-full text-xs transition-colors cursor-pointer whitespace-nowrap shadow-2xs"
-                >
-                  Re-include SEN Cases
-                </button>
-              </div>
-            )}
 
             {/* Geographic Scope Badge */}
             <div className="flex items-center justify-between px-1 text-xs text-neutral-500">
@@ -459,7 +424,6 @@ export default function App() {
               showBenchmark={filters.compareBenchmark}
               durationFilter={filters.durationFilter}
               calculatorParams={calculatorParams}
-              excludeSEN={filters.excludeSEN}
             />
 
             {/* Visualisations Suite (Recharts) */}
@@ -558,6 +522,7 @@ export default function App() {
             <StratosKPICards
               stats={stratosNationalAggregate}
               termLabel={filters.selectedTerm}
+              durationThreshold={calculatorParams.durationThreshold ?? 8}
             />
 
             {/* Visual Analytics & Breakdown */}
@@ -586,15 +551,6 @@ export default function App() {
               leas={stratosCombinedLEAs}
               onSelectLA={handleSelectLA}
               academicYear={filters.selectedTerm}
-              excludeSEN={filters.excludeSEN}
-              onToggleExcludeSEN={(val) => {
-                handleFilterChange({ excludeSEN: val });
-                setCalculatorParams((prev) => ({
-                  ...prev,
-                  cohortMode: val ? 'exclude-sen' : 'all',
-                }));
-                showToast(val ? 'SEN / EHCP cases (~30%) excluded from Risk Matrix' : 'All cases included in Risk Matrix');
-              }}
             />
           </div>
         )}

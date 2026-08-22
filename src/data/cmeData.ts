@@ -182,8 +182,6 @@ export const LOCAL_AUTHORITIES_DATA: LocalAuthority[] = dedupedAuthorities.map((
       ? Number(((totalCME / compulsoryPupils) * 1000).toFixed(2))
       : 'c';
 
-    const r = rawTerm.reasons || {};
-
     // Year groups
     const yg = rawTerm.yearGroups || {};
     const primaryCount = parseVal(yg['Reception']?.count) + parseVal(yg['Year 1']?.count) + parseVal(yg['Year 2']?.count) + parseVal(yg['Year 3']?.count) + parseVal(yg['Year 4']?.count) + parseVal(yg['Year 5']?.count) + parseVal(yg['Year 6']?.count);
@@ -211,11 +209,6 @@ export const LOCAL_AUTHORITIES_DATA: LocalAuthority[] = dedupedAuthorities.map((
         rawOver52Weeks: w52p,
         rawUnknown: durUnknown,
       },
-      senSupportCount: parseVal(r['School dissatisfaction SEND']?.count),
-      ehcpCount: parseVal(r['Difficulty accessing suitable school place']?.count),
-      senProportionPercent: (totalCME && totalCME !== 'c' && totalCME > 0)
-        ? Number((((parseVal(r['School dissatisfaction SEND']?.count) + parseVal(r['Difficulty accessing suitable school place']?.count)) / totalCME) * 100).toFixed(1))
-        : 0,
       officialReasons: rawTerm.reasons || {},
       officialDurations: rawTerm.durations || {},
       officialSex: rawTerm.sex || {},
@@ -357,8 +350,7 @@ export function getPublishedBreakdown(
 export function calculateAggregate(
   authorities: LocalAuthority[],
   term: AcademicTerm,
-  selectedLabel: string,
-  excludeSEN?: boolean
+  selectedLabel: string
 ): AggregatedStats {
   const termKey = mapTermKey(term);
 
@@ -418,7 +410,7 @@ export function calculateAggregate(
 
   let totalCMEDeltaPercent: number | undefined;
   if (prevTerm) {
-    const prevAggregate = calculateAggregate(authorities, prevTerm, selectedLabel, excludeSEN);
+    const prevAggregate = calculateAggregate(authorities, prevTerm, selectedLabel);
     if (prevAggregate.totalCME > 0) {
       totalCMEDeltaPercent = Number((((totalCME - prevAggregate.totalCME) / prevAggregate.totalCME) * 100).toFixed(1));
     }
@@ -437,7 +429,6 @@ export function calculateAggregate(
       weeks8To12,
       weeks12Plus,
     },
-    senProportionPercent: 14.5,
     ageCohorts: ageCohortsSum,
     laCount: authorities.length,
     prevTerm,

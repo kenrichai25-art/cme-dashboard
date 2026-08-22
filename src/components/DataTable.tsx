@@ -59,7 +59,6 @@ export const DataTable: React.FC<DataTableProps> = ({
 
   const term = filters.selectedTerm;
   const durationFilter = filters.durationFilter;
-  const excludeSEN = !!filters.excludeSEN;
   const effectiveValPerCase = calculatorParams.recoveryPerCase * calculatorParams.strikeRate;
 
   // Filter list by region and table-level search
@@ -86,8 +85,8 @@ export const DataTable: React.FC<DataTableProps> = ({
       const dataA = a.termsData[term];
       const dataB = b.termsData[term];
 
-      const factorA = excludeSEN ? Math.max(0.1, (100 - (dataA?.senProportionPercent || 30)) / 100) : 1.0;
-      const factorB = excludeSEN ? Math.max(0.1, (100 - (dataB?.senProportionPercent || 30)) / 100) : 1.0;
+      const factorA = 1.0;
+      const factorB = 1.0;
 
       const rawTotalA = typeof dataA?.totalCME === 'number' ? dataA.totalCME : 0;
       const rawTotalB = typeof dataB?.totalCME === 'number' ? dataB.totalCME : 0;
@@ -149,10 +148,6 @@ export const DataTable: React.FC<DataTableProps> = ({
           valA = w1_8A;
           valB = w1_8B;
           break;
-        case 'senProportionPercent':
-          valA = excludeSEN ? 0 : (dataA?.senProportionPercent || 0);
-          valB = excludeSEN ? 0 : (dataB?.senProportionPercent || 0);
-          break;
         default:
           valA = yieldA;
           valB = yieldB;
@@ -162,7 +157,7 @@ export const DataTable: React.FC<DataTableProps> = ({
       if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [filteredData, term, sortConfig, excludeSEN, effectiveValPerCase]);
+  }, [filteredData, term, sortConfig, effectiveValPerCase]);
 
   // Pagination calculations
   const totalItems = sortedData.length;
@@ -361,16 +356,6 @@ export const DataTable: React.FC<DataTableProps> = ({
                 </div>
               </th>
 
-              <th
-                onClick={() => handleSort('senProportionPercent')}
-                className="py-2.5 px-3 text-right cursor-pointer hover:bg-neutral-200/60 transition-colors whitespace-nowrap"
-              >
-                <div className="flex items-center justify-end space-x-1">
-                  <span className="leading-tight block">SEN /<br />EHCP %</span>
-                  {getSortIcon('senProportionPercent')}
-                </div>
-              </th>
-
               <th className="py-2.5 px-3.5 text-right whitespace-nowrap">
                 <span className="leading-tight block">Action<br />Record</span>
               </th>
@@ -390,8 +375,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                 const isSelected = filters.selectedLACode === la.code;
                 const isSuppressed = d?.totalCME === 'c';
 
-                const senPercent = d?.senProportionPercent || 30;
-                const factor = excludeSEN ? Math.max(0.1, (100 - senPercent) / 100) : 1.0;
+                const factor = 1.0;
 
                 const rawTotal = typeof d?.totalCME === 'number' ? d.totalCME : 0;
                 const totalCME = Math.round(rawTotal * factor);
@@ -473,13 +457,6 @@ export const DataTable: React.FC<DataTableProps> = ({
                     {/* 8. 1-8 Weeks Duration */}
                     <td className="py-3 px-2.5 text-right text-neutral-500 font-medium text-xs sm:text-sm">
                       {formatUKNumber(w1_8)}
-                    </td>
-
-                    {/* 9. SEN % */}
-                    <td className="py-3 px-3 text-right text-xs sm:text-sm">
-                      <span className={`text-neutral-700 font-medium ${excludeSEN ? 'text-neutral-400 italic' : ''}`}>
-                        {excludeSEN ? '0% (excl)' : `${d?.senProportionPercent || 0}%`}
-                      </span>
                     </td>
 
                     {/* 10. Actions */}
