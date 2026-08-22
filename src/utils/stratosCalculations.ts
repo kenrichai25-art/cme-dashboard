@@ -1,18 +1,23 @@
-import { 
-  AcademicTerm, 
-  CalculatorParams, 
-  LEACombined, 
-  LocalAuthority, 
-  Region, 
-  RiskLevel, 
-  StratosNationalAggregate, 
-  StratosRegionalRollup 
+import {
+  AcademicTerm,
+  CalculatorParams,
+  LEACombined,
+  LocalAuthority,
+  Region,
+  RiskLevel,
+  StratosNationalAggregate,
+  StratosRegionalRollup
 } from '../types';
+import { scopeCohort, computeYield } from '../data/cmeScope';
 
 export const DEFAULT_CALCULATOR_PARAMS: CalculatorParams = {
   recoveryPerCase: 2800,
   strikeRate: 0.75,
   cohortMode: 'all',
+  // Abroad only, at 8 weeks: the default matches the Child Benefit rule that
+  // entitlement for a claimant abroad generally ends after 8 weeks.
+  includeTiers: ['abroad'],
+  durationThreshold: 8,
 };
 
 export const RISK_TIER_CONFIG = {
@@ -88,7 +93,13 @@ export function computeSTRATOSLEAs(
   selectedTerm: AcademicTerm,
   params: CalculatorParams
 ): LEACombined[] {
-  const { recoveryPerCase, strikeRate, cohortMode = 'all' } = params;
+  const {
+    recoveryPerCase,
+    strikeRate,
+    cohortMode = 'all',
+    includeTiers = ['abroad'],
+    durationThreshold = 8,
+  } = params;
   const effectiveValuePerCase = recoveryPerCase * strikeRate;
 
   return authorities.map((la) => {
@@ -120,21 +131,41 @@ export function computeSTRATOSLEAs(
       w1_8 = Math.round(rawW1_8 * senMultiplier);
       w8_12 = Math.round(rawW8_12 * senMultiplier);
       w12_plus = Math.round(rawW12_plus * senMultiplier);
-    } else if (cohortMode === 'untraceable-abroad') {
-      totalCme = abroad + unknown;
-      // When targeting untraceable/abroad cohort, target cases are computed from the published duration proportion
-      const persistentRatio = rawTotalCme > 0 ? (rawW8_12 + rawW12_plus) / rawTotalCme : 0.4;
-      w8_12 = Math.round(totalCme * 0.25);
-      w12_plus = Math.round(totalCme * persistentRatio);
-      w1_8 = Math.max(0, totalCme - (w8_12 + w12_plus));
     }
 
     const cmeRate = compulsoryPupils > 0 ? Number(((totalCme / compulsoryPupils) * 1000).toFixed(2)) : rawCmeRate;
 
-    const w8_12_val = Math.round(w8_12 * effectiveValuePerCase);
-    const w12_plus_val = Math.round(w12_plus * effectiveValuePerCase);
-    const total_potential = w8_12_val + w12_plus_val;
-    const target_cases = w8_12 + w12_plus;
+    // Yield is scoped to the selected tiers at the selected threshold, using this
+    // authority's own published duration profile. ESTIMATE: reason and duration
+    // are separate published breakdowns and are not cross-tabulated by DfE, so
+    // every figure derived here must be labelled as an estimate in the UI.
+    const officialDurations = termData?.officialDurations || {};
+    const cohortAtThreshold = scopeCohort(
+      officialReasons,
+      officialDurations,
+      termData?.totalRaw ?? rawTotalCme,
+      durationThreshold
+    );
+    const cohortAt12 = scopeCohort(
+      officialReasons,
+      officialDurations,
+      termData?.totalRaw ?? rawTotalCme,
+      12
+    );
+
+    const yieldAtThreshold = computeYield(cohortAtThreshold, {
+      recoveryPerCase,
+      strikeRate,
+      includeTiers,
+    });
+    const yieldAt12 = computeYield(cohortAt12, { recoveryPerCase, strikeRate, includeTiers });
+
+    // Split the scoped yield across the published bands. At a 12-week threshold
+    // the 8–12 band is out of scope entirely, so it contributes nothing.
+    const w12_plus_val = yieldAt12.value;
+    const w8_12_val = Math.max(0, yieldAtThreshold.value - w12_plus_val);
+    const total_potential = yieldAtThreshold.value;
+    const target_cases = yieldAtThreshold.cases;
 
     const w12_plus_pct = totalCme > 0 ? (w12_plus / totalCme) * 100 : 0;
     const avg_value_per_cme = totalCme > 0 ? total_potential / totalCme : 0;
@@ -188,7 +219,9 @@ export function computeStratosNationalAggregate(
   const totalCme = combined.reduce((acc, curr) => acc + curr.total_cme, 0);
   const totalW8_12 = combined.reduce((acc, curr) => acc + curr.w8_12_count, 0);
   const totalW12_plus = combined.reduce((acc, curr) => acc + curr.w12_plus, 0);
-  const totalTargetCases = totalW8_12 + totalW12_plus;
+  // Sum the scoped per-authority estimate. Adding the published duration bands
+  // here would silently reintroduce the all-reasons cohort the yield excludes.
+  const totalTargetCases = combined.reduce((acc, curr) => acc + curr.target_cases_count, 0);
 
   const totalW8_12_value = combined.reduce((acc, curr) => acc + curr.w8_12_value_calc, 0);
   const totalW12_plus_value = combined.reduce((acc, curr) => acc + curr.w12_plus_value_calc, 0);
@@ -235,7 +268,8 @@ export function computeStratosRegionalRollup(
       const totalCme = inRegion.reduce((acc, curr) => acc + curr.total_cme, 0);
       const w8_12 = inRegion.reduce((acc, curr) => acc + curr.w8_12_count, 0);
       const w12_plus = inRegion.reduce((acc, curr) => acc + curr.w12_plus, 0);
-      const targetCases = w8_12 + w12_plus;
+      // Scoped per-authority estimate, not the published duration bands.
+      const targetCases = inRegion.reduce((acc, curr) => acc + curr.target_cases_count, 0);
       const totalPotential = inRegion.reduce((acc, curr) => acc + curr.total_potential_calc, 0);
 
       const criticalCount = inRegion.filter((la) => la.risk_level === 'Critical').length;

@@ -29,7 +29,8 @@ import {
   formatUKNumber,
   TOTAL_AUTHORITIES_COUNT
 } from './data/cmeData';
-import { DFE_REASON_CATEGORIES, parseCell } from './data/cmeScope';
+import { DFE_REASON_CATEGORIES, parseCell, SCOPE_TIERS } from './data/cmeScope';
+import { EstimateMarker } from './components/stratos/EstimateMarker';
 import { 
   DfeApiStatus, 
   testDfeApiConnection, 
@@ -171,6 +172,15 @@ export default function App() {
     };
     return computeSTRATOSLEAs(LOCAL_AUTHORITIES_DATA, filters.selectedTerm, effectiveParams);
   }, [filters.selectedTerm, calculatorParams, filters.excludeSEN]);
+
+  // Human-readable summary of which tiers and threshold the yield figures reflect.
+  const activeScopeSummary = useMemo(() => {
+    const ids = calculatorParams.includeTiers ?? ['abroad'];
+    const threshold = calculatorParams.durationThreshold ?? 8;
+    const labels = SCOPE_TIERS.filter((t) => ids.includes(t.id)).map((t) => t.label);
+    const tierText = labels.length === 0 ? 'no tiers selected' : labels.join(' + ');
+    return `${tierText}, ${threshold} weeks+`;
+  }, [calculatorParams.includeTiers, calculatorParams.durationThreshold]);
 
   const stratosNationalAggregate = useMemo(() => {
     return computeStratosNationalAggregate(stratosCombinedLEAs, filters.selectedTerm, calculatorParams);
@@ -528,8 +538,12 @@ export default function App() {
                 </select>
               </div>
 
-              <div className="text-xs text-neutral-500 font-medium">
-                Targeting <strong className="text-emerald-700 font-bold">{stratosNationalAggregate.total_target_cases.toLocaleString('en-GB')}</strong> Actionable Child Benefit Cases across England
+              <div className="text-xs text-neutral-500 font-medium flex items-center gap-1.5">
+                <span>
+                  Targeting <strong className="text-emerald-700 font-bold">{stratosNationalAggregate.total_target_cases.toLocaleString('en-GB')}</strong> Actionable Child Benefit Cases across England
+                  <span className="text-neutral-400"> ({activeScopeSummary})</span>
+                </span>
+                <EstimateMarker />
               </div>
             </div>
 

@@ -42,9 +42,10 @@ import {
   DURATION_CONFIG,
   OFFICIAL_20_REASONS,
   REASON_COLORS,
-  formatUKNumber, 
+  formatUKNumber,
   formatGBP
 } from '../data/cmeData';
+import { scopeCohort, computeYield } from '../data/cmeScope';
 import { 
   DEFAULT_CALCULATOR_PARAMS, 
   RISK_TIER_CONFIG, 
@@ -77,7 +78,8 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
   // Financial Recovery & Yield Computations for this LA and term
   const recoveryPerCase = calculatorParams.recoveryPerCase;
   const strikeRate = calculatorParams.strikeRate;
-  const cohortMode = calculatorParams.cohortMode || 'all';
+  const includeTiers = calculatorParams.includeTiers ?? ['abroad'];
+  const durationThreshold = calculatorParams.durationThreshold ?? 8;
   const effectiveValuePerCase = recoveryPerCase * strikeRate;
 
   const rawTotalCme = parseDfENumber(currentTermData?.totalCME, 0);
@@ -89,20 +91,28 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
   const abroad = parseDfENumber(officialR['Believed to have moved to another country']?.count, 0);
   const unknown = parseDfENumber(officialR['Unknown']?.count, 0) + parseDfENumber(officialR['Not recorded']?.count, 0);
 
-  let totalCme = rawTotalCme;
-  let w8_12 = rawW8_12;
-  let w12_plus = rawW12_plus;
+  const totalCme = rawTotalCme;
+  const w8_12 = rawW8_12;
+  const w12_plus = rawW12_plus;
 
-  if (cohortMode === 'untraceable-abroad') {
-    totalCme = abroad + unknown;
-    w8_12 = Math.round(totalCme * 0.25);
-    w12_plus = Math.round(totalCme * 0.45);
-  }
+  // Yield is scoped to the selected tiers at the selected threshold, using this
+  // authority's own published duration profile. Previously this multiplied the
+  // untraceable+abroad cohort by invented 0.25 / 0.45 coefficients.
+  // ESTIMATE: reason and duration are not cross-tabulated by DfE.
+  const scopedCohortAtThreshold = scopeCohort(
+    officialR,
+    currentTermData?.officialDurations || {},
+    currentTermData?.totalRaw ?? rawTotalCme,
+    durationThreshold
+  );
+  const scopedYield = computeYield(scopedCohortAtThreshold, {
+    recoveryPerCase,
+    strikeRate,
+    includeTiers,
+  });
 
-  const targetCases = w8_12 + w12_plus;
-  const w8_12_val = Math.round(w8_12 * effectiveValuePerCase);
-  const w12_plus_val = Math.round(w12_plus * effectiveValuePerCase);
-  const totalYieldValue = w8_12_val + w12_plus_val;
+  const targetCases = scopedYield.cases;
+  const totalYieldValue = scopedYield.value;
 
   let riskLevel: RiskLevel = 'Low';
   if (w12_plus >= 300 || totalCme >= 1000 || totalYieldValue >= 500_000) {

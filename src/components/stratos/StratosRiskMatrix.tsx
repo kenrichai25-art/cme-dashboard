@@ -18,6 +18,7 @@ import {
 import { LEACombined, RiskLevel } from '../../types';
 import { formatGBP, RISK_TIER_CONFIG } from '../../utils/stratosCalculations';
 import { TOTAL_AUTHORITIES_COUNT } from '../../data/cmeData';
+import { EstimateMarker } from './EstimateMarker';
 
 interface StratosRiskMatrixProps {
   leas: LEACombined[];
@@ -118,7 +119,7 @@ export const StratosRiskMatrix: React.FC<StratosRiskMatrixProps> = ({
               </div>
               <div className="h-7 w-px bg-neutral-700 mx-0.5" />
               <div className="text-left">
-                <div className="text-[10px] uppercase tracking-wider text-neutral-400 font-medium">At-Risk Value</div>
+                <div className="text-[10px] uppercase tracking-wider text-neutral-400 font-medium flex items-center gap-1.5">At-Risk Value <EstimateMarker /></div>
                 <div className="text-lg sm:text-xl font-semibold text-[#FE5729] tracking-tight">
                   {formatGBP(
                     [...criticalLEAs, ...highLEAs].reduce((s, c) => s + c.total_potential_calc, 0),
@@ -363,7 +364,7 @@ export const StratosRiskMatrix: React.FC<StratosRiskMatrixProps> = ({
                 {/* Bottom Value & Action */}
                 <div className="flex items-center justify-between border-t border-neutral-100 pt-3 text-xs">
                   <div>
-                    <span className="text-[10px] text-neutral-400 block font-medium">Projected Potential</span>
+                    <span className="text-[10px] text-neutral-400 font-medium flex items-center gap-1.5">Projected Potential <EstimateMarker /></span>
                     <span className="text-lg sm:text-xl font-normal text-[#FE5729] tracking-tight block leading-tight">{formatGBP(la.total_potential_calc)}</span>
                   </div>
                   <span className="text-xs font-semibold text-neutral-500 group-hover:text-[#FE5729] flex items-center gap-1 transition-colors">

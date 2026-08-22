@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { LEACombined, Region, RiskLevel } from '../../types';
 import { formatGBP, RISK_TIER_CONFIG } from '../../utils/stratosCalculations';
+import { EstimateMarker } from './EstimateMarker';
 import { TOTAL_AUTHORITIES_COUNT } from '../../data/cmeData';
 
 interface StratosFinancialTableProps {
@@ -341,7 +342,8 @@ export const StratosFinancialTable: React.FC<StratosFinancialTableProps> = ({
                 className="py-3.5 px-3 text-right cursor-pointer hover:bg-neutral-100/80 transition-colors group"
               >
                 <div className="flex items-center justify-end">
-                  <span>Target Pool (8w+)</span>
+                  <span>Target Pool</span>
+                  <EstimateMarker className="ml-1.5" />
                   {getSortIcon('target_cases_count')}
                 </div>
               </th>
@@ -351,6 +353,7 @@ export const StratosFinancialTable: React.FC<StratosFinancialTableProps> = ({
               >
                 <div className="flex items-center justify-end">
                   <span>8–12w Potential</span>
+                  <EstimateMarker className="ml-1.5" />
                   {getSortIcon('w8_12_value_calc')}
                 </div>
               </th>
@@ -360,6 +363,7 @@ export const StratosFinancialTable: React.FC<StratosFinancialTableProps> = ({
               >
                 <div className="flex items-center justify-end">
                   <span>12+w Potential</span>
+                  <EstimateMarker className="ml-1.5" />
                   {getSortIcon('w12_plus_value_calc')}
                 </div>
               </th>
@@ -369,6 +373,7 @@ export const StratosFinancialTable: React.FC<StratosFinancialTableProps> = ({
               >
                 <div className="flex items-center justify-end">
                   <span>Total Potential (£)</span>
+                  <EstimateMarker className="ml-1.5" />
                   {getSortIcon('total_potential_calc')}
                 </div>
               </th>

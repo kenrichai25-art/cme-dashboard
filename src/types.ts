@@ -1,3 +1,5 @@
+import type { ScopeTierId, DurationThreshold } from './data/cmeScope';
+
 export type Region =
   | 'All England'
   | 'North East'
@@ -158,12 +160,16 @@ export interface TableColumnSort {
 
 export type RiskLevel = 'Critical' | 'High' | 'Medium' | 'Low';
 
-export type StratosCohortMode = 'all' | 'exclude-sen' | 'untraceable-abroad';
+export type StratosCohortMode = 'all' | 'exclude-sen';
 
 export interface CalculatorParams {
   recoveryPerCase: number; // e.g. 2800 (Range: 1000 to 6000)
   strikeRate: number;      // e.g. 0.75 (Range: 0.10 to 1.00)
-  cohortMode?: StratosCohortMode; // Target cohort filter (All, Exclude SEN, Untraceable & Abroad)
+  cohortMode?: StratosCohortMode; // Target cohort filter (All, Exclude SEN)
+  /** Scope tiers counted toward yield. Defaults to abroad only. */
+  includeTiers?: ScopeTierId[];
+  /** Duration threshold in weeks for the Child Benefit absence rule. */
+  durationThreshold?: DurationThreshold;
 }
 
 export interface LEARawData {
