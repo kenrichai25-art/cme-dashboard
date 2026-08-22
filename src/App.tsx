@@ -517,13 +517,10 @@ export default function App() {
                   onChange={(e) => handleFilterChange({ selectedTerm: e.target.value as AcademicTerm })}
                   className="bg-[#F4F4F6] border border-neutral-200 text-[#1C1C1C] text-xs font-bold rounded-full px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#FE5729]/30 focus:border-[#FE5729] cursor-pointer"
                 >
-                  <option value="2025/26 Summer">2025/26 Summer Census (Latest)</option>
-                  <option value="2025/26 Spring">2025/26 Spring Census (Benchmark)</option>
-                  <option value="2025/26 Autumn">2025/26 Autumn Census</option>
+                  <option value="2025/26 Autumn">2025/26 Autumn Census (Latest)</option>
                   <option value="2024/25 Summer">2024/25 Summer Census</option>
                   <option value="2024/25 Spring">2024/25 Spring Census</option>
                   <option value="2024/25 Autumn">2024/25 Autumn Census</option>
-                  <option value="2023/24 Spring">2023/24 Spring Census</option>
                 </select>
               </div>
 

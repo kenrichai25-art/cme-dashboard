@@ -81,7 +81,7 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
   const excludeSEN = !!filters.excludeSEN;
   const effectiveValPerCase = calculatorParams.recoveryPerCase * calculatorParams.strikeRate;
 
-  // 1. Prepare Trajectory Data across all 10 published terms (2022/23 Autumn through 2025/26 Autumn)
+  // 1. Prepare Trajectory Data across all 4 published terms (2024/25 Autumn through 2025/26 Autumn)
   const chronologicalTerms = [...ACADEMIC_TERMS].reverse();
 
   const trajectoryLAs = currentLA
@@ -95,12 +95,6 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
     const natAgg = calculateAggregate(LOCAL_AUTHORITIES_DATA, term, 'National Aggregate', excludeSEN);
 
     const shortTerm = term
-      .replace('2022/23 Autumn', 'Aut 22')
-      .replace('2022/23 Spring', 'Spr 23')
-      .replace('2022/23 Summer', 'Sum 23')
-      .replace('2023/24 Autumn', 'Aut 23')
-      .replace('2023/24 Spring', 'Spr 24')
-      .replace('2023/24 Summer', 'Sum 24')
       .replace('2024/25 Autumn', 'Aut 24')
       .replace('2024/25 Spring', 'Spr 25')
       .replace('2024/25 Summer', 'Sum 25')
@@ -365,7 +359,10 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
                 </span>
               </h3>
               <p className="text-xs text-neutral-400 mt-0.5">
-                Published DfE Returns (10 Terms: Autumn 2022/23 through Autumn 2025/26) • {currentStats.selectedLabel}
+                Published DfE Returns (4 Terms: Autumn 2024/25 through Autumn 2025/26) • {currentStats.selectedLabel}
+              </p>
+              <p className="text-[11px] text-neutral-400 mt-1">
+                Duration breakdowns are published from 2024/25 onwards, so earlier terms are excluded.
               </p>
             </div>
 

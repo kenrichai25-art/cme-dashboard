@@ -115,7 +115,7 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
   }
   const riskConfig = RISK_TIER_CONFIG[riskLevel];
 
-  // 10-term longitudinal series for this LA
+  // 4-term longitudinal series for this LA
   const laTrendData = chronologicalTerms.map((t) => {
     const d = la.termsData[t];
     const termW8_12 = parseDfENumber(d?.durationWeeks?.weeks8To12, 0);
@@ -125,12 +125,6 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
     return {
       term: t,
       shortTerm: t
-        .replace('2022/23 Autumn', 'Aut 22')
-        .replace('2022/23 Spring', 'Spr 23')
-        .replace('2022/23 Summer', 'Sum 23')
-        .replace('2023/24 Autumn', 'Aut 23')
-        .replace('2023/24 Spring', 'Spr 24')
-        .replace('2023/24 Summer', 'Sum 24')
         .replace('2024/25 Autumn', 'Aut 24')
         .replace('2024/25 Spring', 'Spr 25')
         .replace('2024/25 Summer', 'Sum 25')
@@ -229,7 +223,7 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
               ))}
             </div>
             <span className="text-xs font-bold text-neutral-400 hidden sm:inline uppercase tracking-wider text-[10px]">
-              10 Published Terms
+              4 Published Terms
             </span>
           </div>
 
@@ -388,12 +382,15 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
                 </div>
               </div>
 
-              {/* 10-Term Historical Trajectory */}
+              {/* 4-Term Historical Trajectory */}
               <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80">
                 <h4 className="text-xs font-extrabold text-neutral-800 mb-3 flex items-center gap-1.5 font-display">
                   <TrendingUp className="w-3.5 h-3.5 text-[#FE5729]" />
-                  <span>10-Term CME & Yield Trajectory for {la.name}</span>
+                  <span>4-Term CME & Yield Trajectory for {la.name}</span>
                 </h4>
+                <p className="text-[11px] text-neutral-400 -mt-2 mb-3">
+                  Duration breakdowns are published from 2024/25 onwards, so earlier terms are excluded.
+                </p>
                 <div className="h-48 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={laTrendData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>

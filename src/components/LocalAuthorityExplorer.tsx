@@ -125,13 +125,10 @@ export const LocalAuthorityExplorer: React.FC<LocalAuthorityExplorerProps> = ({
               onChange={(e) => onFilterChange({ selectedTerm: e.target.value as AcademicTerm })}
               className="w-full bg-[#F4F4F6] border border-neutral-200 rounded-full px-4 py-2.5 text-xs font-semibold text-neutral-800 focus:outline-none focus:ring-2 focus:ring-[#FE5729]/30 focus:border-[#FE5729] focus:bg-white cursor-pointer"
             >
-              <option value="2025/26 Summer">2025/26 Summer Census (Latest)</option>
-              <option value="2025/26 Spring">2025/26 Spring Census</option>
-              <option value="2025/26 Autumn">2025/26 Autumn Census</option>
+              <option value="2025/26 Autumn">2025/26 Autumn Census (Latest)</option>
               <option value="2024/25 Summer">2024/25 Summer Census</option>
               <option value="2024/25 Spring">2024/25 Spring Census</option>
               <option value="2024/25 Autumn">2024/25 Autumn Census</option>
-              <option value="2023/24 Spring">2023/24 Spring Census</option>
             </select>
           </div>
 

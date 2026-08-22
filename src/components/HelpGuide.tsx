@@ -64,7 +64,7 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onNavigateTab }) => {
       whatYouSee: [
         'Total Active CME count across all 153 English Local Authorities.',
         'High-risk 12+ weeks persistent absences and the SEN / EHCP percentage.',
-        'National 9-term historical trajectory chart (from 2023 to 2026).',
+        'National 4-term historical trajectory chart (from 2024/25 to 2025/26).',
         'Top 9 English Government Regions breakdown and Top High-Exposure Councils.',
       ],
       howToUse: [

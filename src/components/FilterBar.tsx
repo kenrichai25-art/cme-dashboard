@@ -250,19 +250,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             className="w-full border border-neutral-200 rounded-2xl px-3 py-2 text-xs text-[#1C1C1C] focus:ring-2 focus:ring-[#FE5729]/30 focus:border-[#FE5729] outline-none bg-white font-semibold cursor-pointer"
           >
             <optgroup label="Academic Year 2025/26 (Latest Census)">
-              <option value="2025/26 Summer">2025/26 Summer Census</option>
-              <option value="2025/26 Spring">2025/26 Spring Census (Latest DfE Publication)</option>
               <option value="2025/26 Autumn">2025/26 Autumn Census</option>
             </optgroup>
             <optgroup label="Academic Year 2024/25">
               <option value="2024/25 Summer">2024/25 Summer Census</option>
               <option value="2024/25 Spring">2024/25 Spring Census</option>
               <option value="2024/25 Autumn">2024/25 Autumn Census</option>
-            </optgroup>
-            <optgroup label="Academic Year 2023/24 (Baseline Series)">
-              <option value="2023/24 Summer">2023/24 Summer Census</option>
-              <option value="2023/24 Spring">2023/24 Spring Census</option>
-              <option value="2023/24 Autumn">2023/24 Autumn Census</option>
             </optgroup>
           </select>
         </div>

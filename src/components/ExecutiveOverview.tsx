@@ -77,15 +77,10 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
   const trajectoryData = chronologicalTerms.map((term) => {
     const agg = calculateAggregate(LOCAL_AUTHORITIES_DATA, term, 'England National', !!filters.excludeSEN);
     const shortTerm = term
-      .replace('2023/24 Autumn', 'Aut 23')
-      .replace('2023/24 Spring', 'Spr 24')
-      .replace('2023/24 Summer', 'Sum 24')
       .replace('2024/25 Autumn', 'Aut 24')
       .replace('2024/25 Spring', 'Spr 25')
       .replace('2024/25 Summer', 'Sum 25')
-      .replace('2025/26 Autumn', 'Aut 25')
-      .replace('2025/26 Spring', 'Spr 26')
-      .replace('2025/26 Summer', 'Sum 26');
+      .replace('2025/26 Autumn', 'Aut 25');
 
     return {
       term,
@@ -188,13 +183,10 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
                 onChange={(e) => onFilterChange({ selectedTerm: e.target.value as AcademicTerm })}
                 className="text-xs pl-8 pr-8 py-2 bg-[#FE5729] hover:bg-[#E0461B] text-white rounded-xl focus:ring-2 focus:ring-[#1C1C1C] focus:outline-none font-bold shadow-xs cursor-pointer appearance-none transition-colors"
               >
-                <option value="2025/26 Summer" className="text-[#1C1C1C] font-medium bg-white">2025/26 Summer (Latest)</option>
-                <option value="2025/26 Spring" className="text-[#1C1C1C] font-medium bg-white">2025/26 Spring</option>
-                <option value="2025/26 Autumn" className="text-[#1C1C1C] font-medium bg-white">2025/26 Autumn</option>
+                <option value="2025/26 Autumn" className="text-[#1C1C1C] font-medium bg-white">2025/26 Autumn (Latest)</option>
                 <option value="2024/25 Summer" className="text-[#1C1C1C] font-medium bg-white">2024/25 Summer</option>
                 <option value="2024/25 Spring" className="text-[#1C1C1C] font-medium bg-white">2024/25 Spring</option>
                 <option value="2024/25 Autumn" className="text-[#1C1C1C] font-medium bg-white">2024/25 Autumn</option>
-                <option value="2023/24 Spring" className="text-[#1C1C1C] font-medium bg-white">2023/24 Spring</option>
               </select>
               <Calendar className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-white pointer-events-none" />
               <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-2.5 text-white/80 pointer-events-none" />
@@ -313,16 +305,19 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-[#1C1C1C]">
-                  National CME Longitudinal Trajectory (2023/24 – 2025/26)
+                  National CME Longitudinal Trajectory (2024/25 – 2025/26)
                 </h3>
                 <p className="text-xs text-neutral-500 mt-0.5">
                   Official census progression showing total pupils missing education vs persistent 12+ week cases.
                 </p>
               </div>
               <span className="px-3 py-1 rounded-full bg-neutral-100 text-neutral-700 text-xs font-bold border border-neutral-200">
-                9 Terms
+                4 Terms
               </span>
             </div>
+            <p className="text-[11px] text-neutral-400 mt-2">
+              Duration breakdowns are published from 2024/25 onwards, so earlier terms are excluded.
+            </p>
 
             <div className="h-64 mt-4 w-full">
               <ResponsiveContainer width="100%" height="100%">

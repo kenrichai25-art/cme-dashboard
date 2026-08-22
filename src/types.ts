@@ -14,13 +14,7 @@ export type AcademicTerm =
   | '2025/26 Autumn'
   | '2024/25 Summer'
   | '2024/25 Spring'
-  | '2024/25 Autumn'
-  | '2023/24 Summer'
-  | '2023/24 Spring'
-  | '2023/24 Autumn'
-  | '2022/23 Summer'
-  | '2022/23 Spring'
-  | '2022/23 Autumn';
+  | '2024/25 Autumn';
 
 export type OfficialDfeReason =
   | 'Believed to have moved to another country'
