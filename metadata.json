@@ -1,0 +1,8 @@
+{
+  "name": "Ken DfE CME Intelligence Dashboard",
+  "description": "Interactive UK Education Intelligence Dashboard analyzing Department for Education official statistics on Children Missing Education (CME) across Local Authorities and regions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
