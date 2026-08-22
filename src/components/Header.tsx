@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { DfeApiStatus } from '../services/dfeApiService';
 import { MainDashboardTab } from '../types';
+import { TOTAL_AUTHORITIES_COUNT } from '../data/cmeData';
 
 interface HeaderProps {
   apiStatus: DfeApiStatus | null;
@@ -68,7 +69,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center space-x-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-[11px] text-neutral-300 font-medium">
-                {apiStatus?.totalLAsSynchronised ? `${apiStatus.totalLAsSynchronised} / 153 LAs Synchronised (100% England)` : '153 / 153 English LAs Active'}
+                {apiStatus?.totalLAsSynchronised ? `${apiStatus.totalLAsSynchronised} / ${TOTAL_AUTHORITIES_COUNT} LAs Synchronised (100% England)` : `${TOTAL_AUTHORITIES_COUNT} / ${TOTAL_AUTHORITIES_COUNT} English LAs Active`}
               </span>
             </div>
             <div className="hidden md:flex items-center space-x-1 text-neutral-400">
@@ -130,7 +131,7 @@ export const Header: React.FC<HeaderProps> = ({
                   ? 'bg-neutral-200 text-neutral-600 cursor-wait'
                   : 'bg-[#FE5729] hover:bg-[#E0461B] text-white'
               }`}
-              title="Pull full census dataset for all 153 English Local Authorities from DfE EES API"
+              title={`Pull full census dataset for all ${TOTAL_AUTHORITIES_COUNT} English Local Authorities from DfE EES API`}
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isPullingData ? 'animate-spin' : ''}`} />
               <span>{isPullingData ? 'Syncing...' : 'Sync All England'}</span>
@@ -211,7 +212,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
                 activeTab === 'la-explorer' ? 'bg-[#FE5729] text-white' : 'bg-neutral-200 text-neutral-700'
               }`}>
-                153 LAs
+                {TOTAL_AUTHORITIES_COUNT} LAs
               </span>
             </button>
 

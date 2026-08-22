@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { CalculatorParams } from '../../types';
 import { formatGBP } from '../../utils/stratosCalculations';
+import { TOTAL_AUTHORITIES_COUNT } from '../../data/cmeData';
 
 interface StratosCalculatorSettingsProps {
   params: CalculatorParams;
@@ -43,7 +44,7 @@ export const StratosCalculatorSettings: React.FC<StratosCalculatorSettingsProps>
               </span>
             </h2>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Adjust case recovery value and strike rate across all 153 English Education Authorities
+              Adjust case recovery value and strike rate across all {TOTAL_AUTHORITIES_COUNT} English Education Authorities
             </p>
           </div>
         </div>

@@ -23,11 +23,12 @@ import {
   MainDashboardTab, 
   Region 
 } from './types';
-import { 
-  LOCAL_AUTHORITIES_DATA, 
-  calculateAggregate, 
-  formatUKNumber, 
-  REASON_LABELS 
+import {
+  LOCAL_AUTHORITIES_DATA,
+  calculateAggregate,
+  formatUKNumber,
+  REASON_LABELS,
+  TOTAL_AUTHORITIES_COUNT
 } from './data/cmeData';
 import { 
   DfeApiStatus, 
@@ -114,7 +115,7 @@ export default function App() {
         selectedRegion: 'All England',
         selectedLACode: null,
       }));
-      showToast(`Synchronised all 153 English Local Authorities from DfE EES API (100% Coverage)`);
+      showToast(`Synchronised all ${TOTAL_AUTHORITIES_COUNT} English Local Authorities from DfE EES API (100% Coverage)`);
     } catch (err) {
       showToast('Error syncing with DfE EES API. Using verified local census cache.');
     } finally {
@@ -161,7 +162,7 @@ export default function App() {
   }, [currentLA, filters.selectedRegion, filters.selectedTerm, filters.excludeSEN]);
 
   // =========================================================
-  // STRATOS Live Model Computations (153 LEAs + National + Regional)
+  // STRATOS Live Model Computations (all LEAs + National + Regional)
   // =========================================================
   const stratosCombinedLEAs = useMemo(() => {
     const effectiveParams: CalculatorParams = {
@@ -195,7 +196,7 @@ export default function App() {
       searchQuery: '',
       excludeSEN: false,
     });
-    showToast('Scope reset to All England (153 Authorities)');
+    showToast(`Scope reset to All England (${TOTAL_AUTHORITIES_COUNT} Authorities)`);
   };
 
   const handleSelectLA = (code: string) => {
@@ -283,7 +284,7 @@ export default function App() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    const filename = `DfE_CME_Official_Statistics_${term.replace('/', '-').replace(' ', '_')}_${filters.selectedRegion.replace(' ', '_')}_England_153_LAs.csv`;
+    const filename = `DfE_CME_Official_Statistics_${term.replace('/', '-').replace(' ', '_')}_${filters.selectedRegion.replace(' ', '_')}_England_${TOTAL_AUTHORITIES_COUNT}_LAs.csv`;
     link.setAttribute('download', filename);
     document.body.appendChild(link);
     link.click();
@@ -427,11 +428,11 @@ export default function App() {
                   onClick={handleResetFilters}
                   className="text-[#FE5729] hover:underline font-bold cursor-pointer"
                 >
-                  ← Return to All England (153 Authorities)
+                  ← Return to All England ({TOTAL_AUTHORITIES_COUNT} Authorities)
                 </button>
               ) : (
                 <span className="text-[11px] text-neutral-400 font-medium">
-                  100% England Geographic Coverage (153 / 153 Upper Tier Authorities)
+                  100% England Geographic Coverage ({TOTAL_AUTHORITIES_COUNT} / {TOTAL_AUTHORITIES_COUNT} Upper Tier Authorities)
                 </span>
               )}
             </div>
@@ -470,7 +471,7 @@ export default function App() {
                     Want to inspect and compare individual councils?
                   </h4>
                   <p className="text-xs text-neutral-500 mt-0.5">
-                    Explore all 153 English Local Authorities in the interactive League Table with sorting, searching, and CSV export.
+                    Explore all {TOTAL_AUTHORITIES_COUNT} English Local Authorities in the interactive League Table with sorting, searching, and CSV export.
                   </p>
                 </div>
               </div>
@@ -478,7 +479,7 @@ export default function App() {
                 onClick={() => setActiveTab('la-explorer')}
                 className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-5 py-2.5 bg-[#1C1C1C] hover:bg-neutral-800 text-white text-xs font-bold rounded-full shadow-xs transition-colors cursor-pointer whitespace-nowrap"
               >
-                <span>Open 153 LA League Table</span>
+                <span>Open {TOTAL_AUTHORITIES_COUNT} LA League Table</span>
                 <ExternalLink className="w-3.5 h-3.5 text-[#FE5729]" />
               </button>
             </div>
@@ -628,7 +629,7 @@ export default function App() {
                 Department for Education • Children Missing Education (CME) Financial Impact Suite
               </p>
               <p className="text-[11px] text-neutral-400 mt-0.5">
-                Contains public sector information licensed under the Open Government Licence v3.0 (OGL). Covers 153 English Education Authorities.
+                Contains public sector information licensed under the Open Government Licence v3.0 (OGL). Covers {TOTAL_AUTHORITIES_COUNT} English Education Authorities.
               </p>
             </div>
           </div>

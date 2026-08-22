@@ -54,14 +54,14 @@ export const StratosDataBridge: React.FC<StratosDataBridgeProps> = ({
       setImportStatus('Please enter a valid Google Sheets URL or public publish link.');
       return;
     }
-    setImportStatus('Connecting to Google Sheets v4 API... Synced 153 LEA records successfully.');
+    setImportStatus(`Connecting to Google Sheets v4 API... Synced ${DFE_EES_CONFIG.totalEnglandLAs} LEA records successfully.`);
   };
 
   const handleExportJSON = () => {
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(leas, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `CME_Financial_Impact_England_153_LEAs_${academicYear.replace(/[\/\s]/g, '_')}.json`);
+    downloadAnchor.setAttribute('download', `CME_Financial_Impact_England_${DFE_EES_CONFIG.totalEnglandLAs}_LEAs_${academicYear.replace(/[\/\s]/g, '_')}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -107,7 +107,7 @@ export const StratosDataBridge: React.FC<StratosDataBridgeProps> = ({
               }`}
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isPullingData ? 'animate-spin' : ''}`} />
-              <span>{isPullingData ? 'Synchronising 153 LEAs...' : 'Refresh Live DfE Data'}</span>
+              <span>{isPullingData ? `Synchronising ${DFE_EES_CONFIG.totalEnglandLAs} LEAs...` : 'Refresh Live DfE Data'}</span>
             </button>
           </div>
         </div>
@@ -216,9 +216,9 @@ export const StratosDataBridge: React.FC<StratosDataBridgeProps> = ({
           <div className="p-4 rounded-2xl bg-[#F4F4F6] border border-neutral-200/70">
             <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">Authorities In Scope</div>
             <div className="text-xs font-extrabold text-[#1C1C1C] mt-1">
-              153 / 153 English LEAs (100% Coverage)
+              {DFE_EES_CONFIG.totalEnglandLAs} / {DFE_EES_CONFIG.totalEnglandLAs} English LEAs (100% Coverage)
             </div>
-            <div className="text-[10px] text-neutral-400 mt-0.5">All 9 Government Office Regions</div>
+            <div className="text-[10px] text-neutral-400 mt-0.5">All 10 Government Office Regions</div>
           </div>
 
           <div className="p-4 rounded-2xl bg-[#F4F4F6] border border-neutral-200/70">
@@ -295,7 +295,7 @@ export const StratosDataBridge: React.FC<StratosDataBridgeProps> = ({
             </div>
 
             <p className="text-xs text-neutral-600 mt-3 leading-relaxed">
-              Export the current 153 Local Authorities combined dataset including all duration counts (1–8w, 8–12w, 12+w), risk tiers, and calculated financial recovery projections.
+              Export the current {DFE_EES_CONFIG.totalEnglandLAs} Local Authorities combined dataset including all duration counts (1–8w, 8–12w, 12+w), risk tiers, and calculated financial recovery projections.
             </p>
           </div>
 

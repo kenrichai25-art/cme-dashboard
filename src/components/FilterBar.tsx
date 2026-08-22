@@ -216,9 +216,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             }}
             className="w-full border border-neutral-200 rounded-2xl px-3 py-2 text-xs text-[#1C1C1C] focus:ring-2 focus:ring-[#FE5729]/30 focus:border-[#FE5729] outline-none bg-white font-semibold cursor-pointer"
           >
+            <option value="All England">All England (National)</option>
             {ALL_REGIONS.map((region) => (
               <option key={region} value={region}>
-                {region === 'All England' ? 'All England (National)' : region}
+                {region}
               </option>
             ))}
           </select>

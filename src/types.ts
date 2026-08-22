@@ -2,11 +2,12 @@ export type Region =
   | 'All England'
   | 'North East'
   | 'North West'
-  | 'Yorkshire and the Humber'
+  | 'Yorkshire and The Humber'
   | 'East Midlands'
   | 'West Midlands'
   | 'East of England'
-  | 'London'
+  | 'Inner London'
+  | 'Outer London'
   | 'South East'
   | 'South West';
 

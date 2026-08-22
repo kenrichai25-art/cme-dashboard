@@ -27,6 +27,7 @@ import {
   ArrowRight,
   Sparkles
 } from 'lucide-react';
+import { TOTAL_AUTHORITIES_COUNT } from '../../data/cmeData';
 
 interface LegalSection {
   id: string;
@@ -71,7 +72,7 @@ export const StratosComplianceGuide: React.FC = () => {
       content: (
         <div className="space-y-4 text-xs text-slate-700 leading-relaxed">
           <p>
-            Under <strong>Section 436A of the Education Act 1996</strong> (inserted by Section 4 of the Education and Inspections Act 2006), all 153 English Local Education Authorities (LEAs) possess an unequivocal, non-delegable statutory duty to make arrangements to enable them to establish the identities of children in their area who are of compulsory school age and:
+            Under <strong>Section 436A of the Education Act 1996</strong> (inserted by Section 4 of the Education and Inspections Act 2006), all {TOTAL_AUTHORITIES_COUNT} English Local Education Authorities (LEAs) possess an unequivocal, non-delegable statutory duty to make arrangements to enable them to establish the identities of children in their area who are of compulsory school age and:
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="p-3 bg-white rounded-lg border border-slate-200">
@@ -401,7 +402,7 @@ export const StratosComplianceGuide: React.FC = () => {
           <div className="p-3 rounded-2xl bg-neutral-900/90 border border-neutral-800">
             <div className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Primary Education Act</div>
             <div className="text-xs font-bold text-white mt-1">Section 436A EA 1996</div>
-            <div className="text-[10px] text-emerald-400 font-medium mt-0.5">153 LEAs Statutory Scope</div>
+            <div className="text-[10px] text-emerald-400 font-medium mt-0.5">{TOTAL_AUTHORITIES_COUNT} LEAs Statutory Scope</div>
           </div>
 
           <div className="p-3 rounded-2xl bg-neutral-900/90 border border-neutral-800">

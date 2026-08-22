@@ -1,17 +1,19 @@
 import { AcademicTerm, AggregatedStats, LocalAuthority, ReasonBreakdown, Region, TermDataPoint } from '../types';
 import officialDataJson from './officialDfeData.json';
 
+// The ten real DfE regions present in the data. Excludes 'All England' — that is a
+// filter sentinel meaning "no region filter", not a region of its own.
 export const ALL_REGIONS: Region[] = [
-  'All England',
-  'London',
-  'North West',
-  'West Midlands',
-  'Yorkshire and the Humber',
-  'South East',
-  'East of England',
-  'South West',
-  'East Midlands',
   'North East',
+  'North West',
+  'Yorkshire and The Humber',
+  'East Midlands',
+  'West Midlands',
+  'East of England',
+  'Inner London',
+  'Outer London',
+  'South East',
+  'South West',
 ];
 
 export const ACADEMIC_TERMS: AcademicTerm[] = [
@@ -160,7 +162,17 @@ function parseVal(val: any): number {
   return isNaN(n) ? 0 : n;
 }
 
-export const LOCAL_AUTHORITIES_DATA: LocalAuthority[] = (officialDataJson.localAuthorities as any[]).map((la) => {
+// North Yorkshire and Somerset are published twice in the raw dataset: once under
+// their old (pre-reorganisation) ONS code and once under their new one. The old-code
+// row carries no data for any term we display, so it is a duplicate authority with
+// nothing in it. Keep only entries that have a real record for at least one of the
+// terms actually shown.
+const activeTermKeys = new Set(ACADEMIC_TERMS.map(mapTermKey));
+const dedupedAuthorities = (officialDataJson.localAuthorities as any[]).filter(
+  (la) => la.terms && Object.keys(la.terms).some((k) => activeTermKeys.has(k))
+);
+
+export const LOCAL_AUTHORITIES_DATA: LocalAuthority[] = dedupedAuthorities.map((la) => {
   const termsData: Record<AcademicTerm, TermDataPoint> = {} as any;
 
   for (const term of ACADEMIC_TERMS) {
@@ -265,7 +277,7 @@ export const LOCAL_AUTHORITIES_DATA: LocalAuthority[] = (officialDataJson.localA
 
   // Determine tier
   let tier: 'Metropolitan District' | 'London Borough' | 'Unitary Authority' | 'County Council' = 'Unitary Authority';
-  if (la.region === 'London') tier = 'London Borough';
+  if (la.region === 'Inner London' || la.region === 'Outer London') tier = 'London Borough';
   else if (la.code.startsWith('E08')) tier = 'Metropolitan District';
   else if (la.code.startsWith('E10')) tier = 'County Council';
 
@@ -278,6 +290,10 @@ export const LOCAL_AUTHORITIES_DATA: LocalAuthority[] = (officialDataJson.localA
   };
 });
 
+// Single source of truth for "how many local authorities are in the data" — replaces
+// every previously hardcoded 153 across the app.
+export const TOTAL_AUTHORITIES_COUNT = LOCAL_AUTHORITIES_DATA.length;
+
 /**
  * Calculate aggregate totals for national or regional filters from authentic DfE published rows
  */
@@ -289,8 +305,11 @@ export function calculateAggregate(
 ): AggregatedStats {
   const termKey = mapTermKey(term);
 
-  // If this is national, check if we have the published national headline directly
-  const isNational = selectedLabel.includes('England') || selectedLabel.includes('National');
+  // If this is national, check if we have the published national headline directly.
+  // Note: this must not match on the bare substring 'England', since the region
+  // 'East of England' contains it too — that previously caused the East of England
+  // regional total to be silently replaced with the national figure.
+  const isNational = selectedLabel === 'All England' || selectedLabel.includes('National');
   const nationalRaw = (officialDataJson.national as any)?.[termKey];
 
   let totalCME = 0;

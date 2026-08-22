@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { LEACombined, RiskLevel } from '../../types';
 import { formatGBP, RISK_TIER_CONFIG } from '../../utils/stratosCalculations';
+import { TOTAL_AUTHORITIES_COUNT } from '../../data/cmeData';
 
 interface StratosRiskMatrixProps {
   leas: LEACombined[];
@@ -83,7 +84,7 @@ export const StratosRiskMatrix: React.FC<StratosRiskMatrixProps> = ({
               LEA Compliance Risk Tier Matrix
             </h2>
             <p className="text-xs text-neutral-400 max-w-2xl mt-1 leading-relaxed">
-              Automated categorization of all 153 English Education Authorities based on 12+ weeks persistent absence volume, unknown trace caseload, overseas relocation indicators, and projected Child Benefit overpayment exposure.
+              Automated categorization of all {TOTAL_AUTHORITIES_COUNT} English Education Authorities based on 12+ weeks persistent absence volume, unknown trace caseload, overseas relocation indicators, and projected Child Benefit overpayment exposure.
             </p>
           </div>
 
@@ -306,7 +307,7 @@ export const StratosRiskMatrix: React.FC<StratosRiskMatrixProps> = ({
                   : 'bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50'
               }`}
             >
-              Show All 153
+              Show All {TOTAL_AUTHORITIES_COUNT}
             </button>
           </div>
         </div>

@@ -17,9 +17,10 @@ import {
   LocalAuthority, 
   Region 
 } from '../types';
-import { 
-  ALL_REGIONS, 
+import {
+  ALL_REGIONS,
   LOCAL_AUTHORITIES_DATA,
+  TOTAL_AUTHORITIES_COUNT,
 } from '../data/cmeData';
 import { DataTable } from './DataTable';
 
@@ -54,7 +55,7 @@ export const LocalAuthorityExplorer: React.FC<LocalAuthorityExplorerProps> = ({
           <div>
             <div className="flex items-center space-x-2">
               <span className="px-2.5 py-1 rounded-full bg-[#FFF3F0] border border-[#FFE4DC] text-[#FE5729] text-[11px] font-bold tracking-wide uppercase">
-                153 Upper Tier Authorities
+                {TOTAL_AUTHORITIES_COUNT} Upper Tier Authorities
               </span>
               <span className="text-neutral-300 text-xs">•</span>
               <span className="text-xs text-neutral-500 font-medium">100% England Geographic Coverage</span>
@@ -109,7 +110,7 @@ export const LocalAuthorityExplorer: React.FC<LocalAuthorityExplorerProps> = ({
               onChange={(e) => onFilterChange({ selectedRegion: e.target.value as Region, selectedLACode: null })}
               className="w-full bg-[#F4F4F6] border border-neutral-200 rounded-full px-4 py-2.5 text-xs font-semibold text-neutral-800 focus:outline-none focus:ring-2 focus:ring-[#FE5729]/30 focus:border-[#FE5729] focus:bg-white cursor-pointer"
             >
-              <option value="All England">All England (153 Authorities)</option>
+              <option value="All England">All England ({TOTAL_AUTHORITIES_COUNT} Authorities)</option>
               {ALL_REGIONS.map((r) => (
                 <option key={r} value={r}>
                   {r} Region

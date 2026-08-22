@@ -47,9 +47,10 @@ import {
   DURATION_CONFIG,
   OFFICIAL_20_REASONS,
   REASON_COLORS,
-  calculateAggregate, 
+  calculateAggregate,
   formatUKNumber,
-  formatGBP
+  formatGBP,
+  TOTAL_AUTHORITIES_COUNT
 } from '../data/cmeData';
 import officialDataJson from '../data/officialDfeData.json';
 
@@ -175,7 +176,7 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
     }
   }
 
-  const regionalData = ALL_REGIONS.filter((r) => r !== 'All England').map((region) => {
+  const regionalData = ALL_REGIONS.map((region) => {
     const lasInReg = LOCAL_AUTHORITIES_DATA.filter((la) => la.region === region);
     const agg = calculateAggregate(lasInReg, termForComparison, region, excludeSEN);
 
@@ -488,7 +489,7 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
         <div className="mt-4 pt-3 border-t border-neutral-100 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-neutral-500 gap-2">
           <div className="flex items-center gap-1.5 font-medium">
             <span className="w-2 h-2 rounded-full bg-[#FE5729] inline-block"></span>
-            <span>Mandatory statutory data collection established by DfE across all 153 English LAs from Autumn 2024</span>
+            <span>Mandatory statutory data collection established by DfE across all {TOTAL_AUTHORITIES_COUNT} English LAs from Autumn 2024</span>
           </div>
           <div className="font-mono text-neutral-600 bg-neutral-100 px-2.5 py-1 rounded-md text-[11px]">
             Latest DfE Benchmark: {formatUKNumber(trajectoryData[trajectoryData.length - 1]?.totalCME)} CME

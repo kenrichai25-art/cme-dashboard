@@ -20,7 +20,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { AcademicTerm, FilterState, LocalAuthority, TableColumnSort, DurationBracket, CalculatorParams } from '../types';
-import { formatUKNumber, formatUKCurrency, REASON_LABELS, DURATION_CONFIG } from '../data/cmeData';
+import { formatUKNumber, formatUKCurrency, REASON_LABELS, DURATION_CONFIG, TOTAL_AUTHORITIES_COUNT } from '../data/cmeData';
 
 interface DataTableProps {
   localAuthorities: LocalAuthority[];
@@ -232,7 +232,7 @@ export const DataTable: React.FC<DataTableProps> = ({
             <input
               id="table-quick-search"
               type="text"
-              placeholder="Search 153 authorities..."
+              placeholder={`Search ${TOTAL_AUTHORITIES_COUNT} authorities...`}
               value={tableSearch}
               onChange={(e) => {
                 setTableSearch(e.target.value);
@@ -531,7 +531,7 @@ export const DataTable: React.FC<DataTableProps> = ({
             <option value={10}>10</option>
             <option value={25}>25</option>
             <option value={50}>50</option>
-            <option value={153}>All (153 LAs)</option>
+            <option value={TOTAL_AUTHORITIES_COUNT}>All ({TOTAL_AUTHORITIES_COUNT} LAs)</option>
           </select>
           <span className="font-medium">
             Showing {pageSize === 0 ? totalItems : Math.min(totalItems, (currentPage - 1) * pageSize + 1)} -{' '}

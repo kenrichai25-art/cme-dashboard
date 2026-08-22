@@ -41,14 +41,15 @@ import {
   MainDashboardTab, 
   Region 
 } from '../types';
-import { 
-  ACADEMIC_TERMS, 
-  ALL_REGIONS, 
-  LOCAL_AUTHORITIES_DATA, 
-  calculateAggregate, 
-  formatUKNumber, 
+import {
+  ACADEMIC_TERMS,
+  ALL_REGIONS,
+  LOCAL_AUTHORITIES_DATA,
+  calculateAggregate,
+  formatUKNumber,
   formatUKCurrency,
-  REASON_LABELS 
+  REASON_LABELS,
+  TOTAL_AUTHORITIES_COUNT
 } from '../data/cmeData';
 
 interface ExecutiveOverviewProps {
@@ -111,7 +112,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
     };
   }).sort((a, b) => b.totalCME - a.totalCME);
 
-  // 3. Top High-Volume Local Authorities (Show 9 to match 9 Government Regions height)
+  // 3. Top High-Volume Local Authorities (Show 10 to match 10 Government Regions height)
   const topLAs = [...LOCAL_AUTHORITIES_DATA]
     .map((la) => {
       const d = la.termsData[filters.selectedTerm];
@@ -131,7 +132,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
       };
     })
     .sort((a, b) => b.totalCME - a.totalCME)
-    .slice(0, 9);
+    .slice(0, 10);
 
   // 4. Statutory Reason Breakdown for national
   const reasonsData = (Object.entries(currentStats.reasons) as [keyof typeof REASON_LABELS, number][])
@@ -160,7 +161,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
               Executive Briefing
             </span>
             <span className="text-neutral-300 text-xs">•</span>
-            <span className="text-xs text-neutral-500 font-medium">153 English Local Authorities</span>
+            <span className="text-xs text-neutral-500 font-medium">{TOTAL_AUTHORITIES_COUNT} English Local Authorities</span>
           </div>
           <h2 className="text-xl font-bold text-[#1C1C1C] tracking-tight mt-1">
             England Children Missing Education (CME) Overview
@@ -467,14 +468,14 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
                   Regional Distribution of Children Missing Education
                 </h3>
                 <p className="text-xs text-neutral-500 mt-0.5">
-                  Total cases & modelled recovery exposure across all 9 English Government Regions.
+                  Total cases & modelled recovery exposure across all 10 English Government Regions.
                 </p>
               </div>
               <button
                 onClick={() => onNavigateTab('la-explorer')}
                 className="text-xs font-bold text-[#FE5729] hover:text-[#E0461B] hover:underline cursor-pointer"
               >
-                Explore 153 LAs →
+                Explore {TOTAL_AUTHORITIES_COUNT} LAs →
               </button>
             </div>
 
@@ -572,7 +573,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
               onClick={() => onNavigateTab('la-explorer')}
               className="text-xs font-bold text-[#FE5729] hover:text-[#E0461B] flex items-center gap-1 cursor-pointer"
             >
-              <span>View Full League (153)</span>
+              <span>View Full League ({TOTAL_AUTHORITIES_COUNT})</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -595,7 +596,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
             <ArrowRight className="w-4 h-4 text-neutral-400 group-hover:text-[#FE5729] group-hover:translate-x-1 transition-all" />
           </div>
           <h4 className="text-sm font-bold text-[#1C1C1C] mt-4 group-hover:text-[#FE5729] transition-colors">
-            153 Local Authority League Table
+            {TOTAL_AUTHORITIES_COUNT} Local Authority League Table
           </h4>
           <p className="text-xs text-neutral-500 mt-1">
             Search, filter by region, sort statutory ratios, and inspect individual council histories.

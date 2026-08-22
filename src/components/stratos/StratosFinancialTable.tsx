@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { LEACombined, Region, RiskLevel } from '../../types';
 import { formatGBP, RISK_TIER_CONFIG } from '../../utils/stratosCalculations';
+import { TOTAL_AUTHORITIES_COUNT } from '../../data/cmeData';
 
 interface StratosFinancialTableProps {
   leas: LEACombined[];
@@ -484,7 +485,7 @@ export const StratosFinancialTable: React.FC<StratosFinancialTableProps> = ({
             <option value={15}>15 rows</option>
             <option value={25}>25 rows</option>
             <option value={50}>50 rows</option>
-            <option value={0}>All rows (153)</option>
+            <option value={0}>All rows ({TOTAL_AUTHORITIES_COUNT})</option>
           </select>
         </div>
 

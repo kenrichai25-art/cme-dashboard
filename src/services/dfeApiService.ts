@@ -5,7 +5,7 @@
  */
 
 import { LocalAuthority } from '../types';
-import { LOCAL_AUTHORITIES_DATA } from '../data/cmeData';
+import { LOCAL_AUTHORITIES_DATA, TOTAL_AUTHORITIES_COUNT } from '../data/cmeData';
 
 export interface DfeApiStatus {
   connected: boolean;
@@ -31,7 +31,7 @@ export const DFE_EES_CONFIG = {
   publicationSlug: 'children-missing-education',
   officialDocumentationUrl: 'https://explore-education-statistics.service.gov.uk/find-statistics/children-missing-education',
   accreditedBadgeText: 'Official Statistics (Department for Education EES)',
-  totalEnglandLAs: 153,
+  totalEnglandLAs: TOTAL_AUTHORITIES_COUNT,
   latestDfEReleaseDate: '29 January 2026',
   latestCensusPeriod: '2025/26 Autumn term (Official Publication)',
   nextReleaseDate: 'October 2026',
@@ -60,7 +60,7 @@ export async function testDfeApiConnection(): Promise<DfeApiStatus> {
         dataSource: 'DfE EES Official Data Store',
         statusCode: 200,
         latencyMs: Math.max(12, latency),
-        totalLAsSynchronised: data.authoritiesCount || 153,
+        totalLAsSynchronised: data.authoritiesCount || TOTAL_AUTHORITIES_COUNT,
         englandCoveragePercent: 100,
         lastSyncTimestamp: timeStr,
         lastSyncDate: dateStr,
@@ -82,7 +82,7 @@ export async function testDfeApiConnection(): Promise<DfeApiStatus> {
     dataSource: 'DfE EES Official Data Store',
     statusCode: 200,
     latencyMs: 24,
-    totalLAsSynchronised: 153,
+    totalLAsSynchronised: TOTAL_AUTHORITIES_COUNT,
     englandCoveragePercent: 100,
     lastSyncTimestamp: timeStr,
     lastSyncDate: dateStr,
@@ -114,7 +114,7 @@ export async function pullAllEnglandData(
     percentage: 20,
     message: 'Requesting live release stream from DfE Explore Education Statistics API...',
     loadedCount: 0,
-    totalCount: 153,
+    totalCount: TOTAL_AUTHORITIES_COUNT,
   });
 
   try {
@@ -122,9 +122,9 @@ export async function pullAllEnglandData(
     onProgress?.({
       stage: 'fetching_regions',
       percentage: 60,
-      message: 'Ingesting published census tables across all 153 Local Authorities...',
+      message: `Ingesting published census tables across all ${TOTAL_AUTHORITIES_COUNT} Local Authorities...`,
       loadedCount: 95,
-      totalCount: 153,
+      totalCount: TOTAL_AUTHORITIES_COUNT,
     });
 
     if (syncRes.ok) {
@@ -139,8 +139,8 @@ export async function pullAllEnglandData(
     stage: 'aggregating_authorities',
     percentage: 85,
     message: 'Validating official statutory returns against DfE national totals (34,700 benchmark)...',
-    loadedCount: 153,
-    totalCount: 153,
+    loadedCount: TOTAL_AUTHORITIES_COUNT,
+    totalCount: TOTAL_AUTHORITIES_COUNT,
   });
 
   await new Promise((r) => setTimeout(r, 150));
@@ -149,8 +149,8 @@ export async function pullAllEnglandData(
     stage: 'complete',
     percentage: 100,
     message: 'Synchronisation verified against official DfE dataset (019bb854-d8d5-707a-bc53-e0de9ac70891).',
-    loadedCount: 153,
-    totalCount: 153,
+    loadedCount: TOTAL_AUTHORITIES_COUNT,
+    totalCount: TOTAL_AUTHORITIES_COUNT,
   });
 
   const status = await testDfeApiConnection();

@@ -28,6 +28,7 @@ import {
   Compass,
   Lightbulb
 } from 'lucide-react';
+import { TOTAL_AUTHORITIES_COUNT } from '../data/cmeData';
 import { MainDashboardTab } from '../types';
 
 interface HelpGuideProps {
@@ -62,10 +63,10 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onNavigateTab }) => {
       oneLiner: 'The high-level macro view of England’s missing education statistics and key national totals.',
       purpose: 'Gives managers, directors, and policy leads an instant snapshot of national figures without needing to dig into technical spreadsheets.',
       whatYouSee: [
-        'Total Active CME count across all 153 English Local Authorities.',
+        `Total Active CME count across all ${TOTAL_AUTHORITIES_COUNT} English Local Authorities.`,
         'High-risk 12+ weeks persistent absences and the SEN / EHCP percentage.',
         'National 4-term historical trajectory chart (from 2024/25 to 2025/26).',
-        'Top 9 English Government Regions breakdown and Top High-Exposure Councils.',
+        'Top 10 English Government Regions breakdown and Top High-Exposure Councils.',
       ],
       howToUse: [
         'Use the top orange dropdown to change the Academic Term (e.g. 2025/26 Summer or Spring).',
@@ -98,12 +99,12 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onNavigateTab }) => {
     {
       id: 'la-explorer',
       name: 'LA Table',
-      badge: '153 Council League',
+      badge: `${TOTAL_AUTHORITIES_COUNT} Council League`,
       icon: Building2,
       accentColor: 'text-[#FE5729]',
       borderClass: 'border-neutral-200 hover:border-[#FE5729]/50',
       bgClass: 'bg-neutral-100 text-neutral-800',
-      oneLiner: 'The complete searchable, sortable master league table of all 153 English Education Authorities.',
+      oneLiner: `The complete searchable, sortable master league table of all ${TOTAL_AUTHORITIES_COUNT} English Education Authorities.`,
       purpose: 'The central directory for finding specific councils, sorting by caseload or recovery potential, and downloading official data.',
       whatYouSee: [
         'Every English council ranked by Total CME, 8–12 Weeks, 12+ Weeks, and Modelled Yield.',
@@ -147,7 +148,7 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onNavigateTab }) => {
       accentColor: 'text-rose-600',
       borderClass: 'border-rose-200 hover:border-rose-500',
       bgClass: 'bg-rose-100 text-rose-800',
-      oneLiner: 'Categorises all 153 councils into 4 risk tiers (Critical, High, Medium, Low) for prioritized casework.',
+      oneLiner: `Categorises all ${TOTAL_AUTHORITIES_COUNT} councils into 4 risk tiers (Critical, High, Medium, Low) for prioritized casework.`,
       purpose: 'Helps compliance teams immediately identify which councils require urgent intervention and support.',
       whatYouSee: [
         '4 Tier Cards: Critical (500+ cases), High (250–499 cases), Medium (100–249 cases), Low (<100 cases).',
@@ -192,12 +193,12 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onNavigateTab }) => {
       oneLiner: 'Technical connectivity showing live sync status with the DfE Open Data API and REST endpoints.',
       purpose: 'For IT professionals and developers integrating this data into external council systems, PowerBI, or databases.',
       whatYouSee: [
-        'Live synchronization status across all 153 authorities.',
+        `Live synchronization status across all ${TOTAL_AUTHORITIES_COUNT} authorities.`,
         'REST API endpoints with copyable code snippets (cURL, Python, JavaScript).',
         'Interactive JSON data tester to view raw DfE census responses.',
       ],
       howToUse: [
-        'Click "Synchronise 153 LAs" to refresh local datasets against DfE census returns.',
+        `Click "Synchronise ${TOTAL_AUTHORITIES_COUNT} LAs" to refresh local datasets against DfE census returns.`,
         'Copy API sample endpoints to integrate into external dashboards or analytics pipelines.',
       ],
     },
@@ -227,12 +228,12 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onNavigateTab }) => {
     {
       question: 'Where does the data come from?',
       answer:
-        'All statistics are derived from official statutory census returns submitted by all 153 English Local Authorities to the Department for Education (DfE) under Section 436A of the Education Act 1996 and published via the DfE Explore Education Statistics (EES) portal.',
+        `All statistics are derived from official statutory census returns submitted by all ${TOTAL_AUTHORITIES_COUNT} English Local Authorities to the Department for Education (DfE) under Section 436A of the Education Act 1996 and published via the DfE Explore Education Statistics (EES) portal.`,
     },
     {
       question: 'How can I find my local council and export its data?',
       answer:
-        'Go to the "LA Table" tab, type your council’s name into the search bar, and click "Inspect" on the right. You can also click the orange "Export CSV" button at the top right to download data for all 153 councils into an Excel spreadsheet.',
+        `Go to the "LA Table" tab, type your council’s name into the search bar, and click "Inspect" on the right. You can also click the orange "Export CSV" button at the top right to download data for all ${TOTAL_AUTHORITIES_COUNT} councils into an Excel spreadsheet.`,
     },
   ];
 
@@ -293,7 +294,7 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onNavigateTab }) => {
             How to Use the CME Intelligence &amp; Compliance Platform
           </h2>
           <p className="text-sm sm:text-base text-neutral-600 mt-2 leading-relaxed">
-            Welcome! This platform brings together official Department for Education (DfE) census data and financial recovery modeling across all <strong>153 English Local Authorities</strong>. You don’t need to be a data scientist or spreadsheet expert to find the insights you need.
+            Welcome! This platform brings together official Department for Education (DfE) census data and financial recovery modeling across all <strong>{TOTAL_AUTHORITIES_COUNT} English Local Authorities</strong>. You don’t need to be a data scientist or spreadsheet expert to find the insights you need.
           </p>
 
           {/* 3 Quick Action Steps */}
@@ -539,7 +540,7 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onNavigateTab }) => {
             onClick={() => onNavigateTab('la-explorer')}
             className="px-4 py-2 rounded-full bg-[#FE5729] hover:bg-[#E0461B] text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
           >
-            LA Table (153 Councils)
+            LA Table ({TOTAL_AUTHORITIES_COUNT} Councils)
           </button>
           <button
             onClick={() => onNavigateTab('stratos-recovery')}
