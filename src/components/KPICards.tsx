@@ -1,7 +1,7 @@
 import React from 'react';
-import { 
-  Users, 
-  Clock, 
+import {
+  Users,
+  Clock,
   PoundSterling,
   AlertTriangle,
   Target,
@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { AggregatedStats, LocalAuthority, DurationBracket, CalculatorParams } from '../types';
 import { formatUKNumber, formatUKCurrency, DURATION_CONFIG, computeSelectionYield, REASON_DATA_UNAVAILABLE_MESSAGE } from '../data/cmeData';
+import { SCOPE_TIERS } from '../data/cmeScope';
+import { EstimateMarker } from './stratos/EstimateMarker';
 
 interface KPICardsProps {
   stats: AggregatedStats;
@@ -38,30 +40,34 @@ export const KPICards: React.FC<KPICardsProps> = ({
 
   const w8_12 = stats.durationWeeks.weeks8To12;
   const w12p = stats.durationWeeks.weeks12Plus;
-  const w1_8 = stats.durationWeeks.weeks1To8;
   const actionable8Plus = w8_12 + w12p;
 
-  // Scoped yield (Stage 4 method via cmeScope.ts), band-split the same way
-  // stratosCalculations.ts does: yield at the active threshold, and yield at
-  // 12 weeks specifically, so the 8-12 band is the difference between them.
-  // Replaces duration-band-count * effectiveValPerCase, which priced every
-  // reason regardless of scope tier. null when the term has no published
-  // reason breakdown (Reason is published for Autumn 2025/26 only).
-  const yieldAtActiveThreshold = computeSelectionYield(authorities, stats.term, calculatorParams);
-  const yieldAt12 = computeSelectionYield(authorities, stats.term, {
-    ...calculatorParams,
-    durationThreshold: 12,
-  });
-  const yieldDataAvailable = yieldAtActiveThreshold.available && yieldAt12.available;
-  const totalYield8Plus = yieldDataAvailable ? yieldAtActiveThreshold.value : null;
-  const yield12p = yieldDataAvailable ? yieldAt12.value : null;
-  const yield8_12 = yieldDataAvailable ? Math.max(0, yieldAtActiveThreshold.value - yieldAt12.value) : null;
+  // Card 2: published duration count at or beyond the active threshold — not
+  // an estimate, and NOT gated by reason-data availability (Duration is
+  // published for every term shown; Reason is Autumn 2025/26 only).
+  const threshold = calculatorParams.durationThreshold ?? 8;
+  const pastThreshold = threshold === 12 ? w12p : actionable8Plus;
 
-  // Percentages for visual progress bars
+  // Cards 3 & 4: tier-scoped estimate at the active threshold (Stage 4
+  // method via cmeScope.ts — each authority's own reason and duration
+  // breakdown scoped with scopeCohort()/computeYield(), then summed).
+  // Replaces duration-band-count * effectiveValPerCase, which priced every
+  // reason regardless of scope tier. Unavailable when the term has no
+  // published reason breakdown (Reason is published for Autumn 2025/26
+  // only) — Duration-only card 2 above is unaffected by this gate.
+  const includeTierIds = calculatorParams.includeTiers ?? ['abroad'];
+  const includedTierLabels = SCOPE_TIERS.filter((t) => includeTierIds.includes(t.id)).map((t) => t.label);
+  const tierSubtitle = includedTierLabels.length ? includedTierLabels.join(' + ') : 'no tiers selected';
+
+  const yieldAtActiveThreshold = computeSelectionYield(authorities, stats.term, calculatorParams);
+  const inScopeCases = yieldAtActiveThreshold.available ? yieldAtActiveThreshold.cases : null;
+  const inScopeValue = yieldAtActiveThreshold.available ? yieldAtActiveThreshold.value : null;
+
+  // Percentages for visual progress bars — each narrower than the last, so
+  // the row reads left to right as one narrowing story.
   const totalCMEPercent = Math.min(100, Math.max(15, Math.round((stats.totalCME / Math.max(nationalStats.totalCME, 1)) * 100)));
-  const share8_12 = stats.totalCME > 0 ? Math.round((w8_12 / stats.totalCME) * 100) : 0;
-  const share12p = stats.totalCME > 0 ? Math.round((w12p / stats.totalCME) * 100) : 0;
-  const share8Plus = stats.totalCME > 0 ? Math.round((actionable8Plus / stats.totalCME) * 100) : 0;
+  const sharePastThreshold = stats.totalCME > 0 ? Math.round((pastThreshold / stats.totalCME) * 100) : 0;
+  const shareInScope = pastThreshold > 0 && inScopeCases != null ? Math.round((inScopeCases / pastThreshold) * 100) : 0;
 
   const renderDelta = (delta: number | undefined, invert: boolean = false) => {
     if (delta === undefined || isNaN(delta)) {
@@ -135,107 +141,105 @@ export const KPICards: React.FC<KPICardsProps> = ({
         </div>
       </div>
 
-      {/* 2. Target 8-12 Weeks */}
-      <div 
+      {/* 2. Past the Threshold — published duration count, not an estimate */}
+      <div
         id="kpi-card-weeks-8-12"
         className="bg-white p-5 sm:p-6 rounded-3xl border border-neutral-300 shadow-sm flex flex-col justify-between min-h-[175px]"
       >
         <div>
-          <div className="text-sm font-semibold text-neutral-600 mb-2">
-            Target 8-12 Weeks
-          </div>
-
-          <div className="mt-1">
-            <span className="text-3xl sm:text-4xl font-bold tracking-tight text-[#B91C1C] leading-none block">
-              {yield8_12 == null ? (
-                <span className="text-lg font-semibold text-neutral-400" title={REASON_DATA_UNAVAILABLE_MESSAGE}>Not published</span>
-              ) : (
-                formatUKCurrency(yield8_12)
-              )}
+          <div className="flex items-center justify-between text-xs font-medium text-neutral-600 mb-2">
+            <span className="flex items-center space-x-1.5">
+              <Clock className="w-4 h-4 text-[#B91C1C]" />
+              <span className="font-bold text-[#1C1C1C]">Past the Threshold</span>
             </span>
           </div>
 
-          <div className="mt-4 h-1.5 bg-rose-100/60 rounded-full overflow-hidden">
-            <div className="bg-[#FF3366] h-full rounded-full transition-all" style={{ width: `${Math.min(100, Math.max(12, share8_12 * 2.5))}%` }} />
+          <div className="flex items-end justify-between mt-2">
+            <span className="text-3xl sm:text-4xl font-bold tracking-tight text-[#B91C1C] leading-none">
+              {formatUKNumber(pastThreshold)}
+            </span>
+          </div>
+
+          <div className="mt-4 h-1.5 bg-[#F4F4F6] rounded-full overflow-hidden">
+            <div className="bg-[#B91C1C] h-full rounded-full transition-all" style={{ width: `${Math.min(100, Math.max(12, sharePastThreshold))}%` }} />
           </div>
         </div>
 
-        <div className="mt-4 flex items-baseline">
-          <span className="text-3xl sm:text-4xl font-bold text-neutral-600 tracking-tight">
-            {formatUKNumber(w8_12)}
-          </span>
-          <span className="text-base font-normal text-neutral-500 ml-1.5">
-            Cases
+        <div className="mt-4 pt-2.5 border-t border-neutral-100 flex items-center justify-between">
+          <span className="text-sm sm:text-base font-bold text-neutral-700">
+            {threshold}+ weeks (DfE published)
           </span>
         </div>
       </div>
 
-      {/* 3. Target 12+ Weeks */}
-      <div 
-        id="kpi-card-weeks-12-plus"
+      {/* 3. In Scope (Estimated) — replaces the deleted SEN card */}
+      <div
+        id="kpi-card-in-scope"
         className="bg-white p-5 sm:p-6 rounded-3xl border border-neutral-300 shadow-sm flex flex-col justify-between min-h-[175px]"
       >
         <div>
-          <div className="text-sm font-semibold text-neutral-600 mb-2">
-            Target 12+ Weeks
-          </div>
-
-          <div className="mt-1">
-            <span className="text-3xl sm:text-4xl font-bold tracking-tight text-[#B91C1C] leading-none block">
-              {yield12p == null ? (
-                <span className="text-lg font-semibold text-neutral-400" title={REASON_DATA_UNAVAILABLE_MESSAGE}>Not published</span>
-              ) : (
-                formatUKCurrency(yield12p)
-              )}
+          <div className="flex items-center justify-between text-xs font-medium text-neutral-600 mb-2">
+            <span className="flex items-center space-x-1.5">
+              <Target className="w-4 h-4 text-[#FE5729]" />
+              <span className="font-bold text-[#1C1C1C]">In Scope (Estimated)</span>
             </span>
+            <EstimateMarker />
           </div>
 
-          <div className="mt-4 h-1.5 bg-rose-100/60 rounded-full overflow-hidden">
-            <div className="bg-[#FF3366] h-full rounded-full transition-all" style={{ width: `${Math.min(100, Math.max(12, share12p * 2))}%` }} />
+          <div className="flex items-end justify-between mt-2">
+            {inScopeCases == null ? (
+              <span className="text-lg font-semibold text-neutral-400" title={REASON_DATA_UNAVAILABLE_MESSAGE}>Not published</span>
+            ) : (
+              <span className="text-3xl sm:text-4xl font-bold tracking-tight text-[#FE5729] leading-none">
+                {formatUKNumber(inScopeCases)}
+              </span>
+            )}
+          </div>
+
+          <div className="mt-4 h-1.5 bg-[#F4F4F6] rounded-full overflow-hidden">
+            <div className="bg-[#FE5729] h-full rounded-full transition-all" style={{ width: `${Math.min(100, Math.max(12, shareInScope))}%` }} />
           </div>
         </div>
 
-        <div className="mt-4 flex items-baseline">
-          <span className="text-3xl sm:text-4xl font-bold text-neutral-600 tracking-tight">
-            {formatUKNumber(w12p)}
-          </span>
-          <span className="text-base font-normal text-neutral-500 ml-1.5">
-            Cases
+        <div className="mt-4 pt-2.5 border-t border-neutral-100 flex items-center justify-between">
+          <span className="text-sm sm:text-base font-bold text-neutral-700 truncate" title={`${tierSubtitle}, ${threshold}+ weeks`}>
+            {tierSubtitle}, {threshold}+ weeks
           </span>
         </div>
       </div>
 
-      {/* 4. Actionable 8+ Weeks Total Recovery Value / Yield */}
-      <div 
+      {/* 4. Estimated Value */}
+      <div
         id="kpi-card-recovery-yield"
         className="bg-white p-5 sm:p-6 rounded-3xl border border-neutral-300 shadow-sm flex flex-col justify-between min-h-[175px]"
       >
         <div>
-          <div className="text-sm font-semibold text-neutral-600 mb-2">
-            Actionable 8+ Weeks
-          </div>
-
-          <div className="mt-1">
-            <span className="text-3xl sm:text-4xl font-bold tracking-tight text-[#FE5729] leading-none block">
-              {totalYield8Plus == null ? (
-                <span className="text-lg font-semibold text-neutral-400" title={REASON_DATA_UNAVAILABLE_MESSAGE}>Not published</span>
-              ) : (
-                formatUKCurrency(totalYield8Plus)
-              )}
+          <div className="flex items-center justify-between text-xs font-medium text-neutral-600 mb-2">
+            <span className="flex items-center space-x-1.5">
+              <PoundSterling className="w-4 h-4 text-emerald-600" />
+              <span className="font-bold text-[#1C1C1C]">Estimated Value</span>
             </span>
+            <EstimateMarker />
           </div>
 
-          <div className="mt-4 h-1.5 bg-orange-100/60 rounded-full overflow-hidden">
-            <div className="bg-[#FE5729] h-full rounded-full transition-all" style={{ width: `${Math.min(100, Math.max(12, share8Plus))}%` }} />
+          <div className="flex items-end justify-between mt-2">
+            {inScopeValue == null ? (
+              <span className="text-lg font-semibold text-neutral-400" title={REASON_DATA_UNAVAILABLE_MESSAGE}>Not published</span>
+            ) : (
+              <span className="text-3xl sm:text-4xl font-bold tracking-tight text-emerald-700 leading-none">
+                {formatUKCurrency(inScopeValue)}
+              </span>
+            )}
+          </div>
+
+          <div className="mt-4 h-1.5 bg-[#F4F4F6] rounded-full overflow-hidden">
+            <div className="bg-emerald-600 h-full rounded-full transition-all" style={{ width: `${Math.min(100, Math.max(12, shareInScope))}%` }} />
           </div>
         </div>
 
-        <div className="mt-4 flex items-baseline">
-          <span className="text-3xl sm:text-4xl font-bold text-neutral-600 tracking-tight">
-            {formatUKNumber(actionable8Plus)}
-          </span>
-          <span className="text-base font-normal text-neutral-500 ml-1.5">
-            Cases
+        <div className="mt-4 pt-2.5 border-t border-neutral-100 flex items-center justify-between">
+          <span className="text-sm sm:text-base font-bold text-neutral-700 truncate" title={tierSubtitle}>
+            {tierSubtitle}
           </span>
         </div>
       </div>
