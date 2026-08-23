@@ -93,17 +93,11 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
   const durationThreshold = calculatorParams.durationThreshold ?? 8;
 
   const rawTotalCme = parseDfENumber(currentTermData?.totalCME, 0);
-  const rawW8_12 = parseDfENumber(currentTermData?.durationWeeks?.weeks8To12, 0);
-  const rawW12_plus = parseDfENumber(currentTermData?.durationWeeks?.weeks12Plus, 0);
 
   // Exact verbatim statutory counts
   const officialR = currentTermData?.officialReasons || {};
-  const abroad = parseDfENumber(officialR['Believed to have moved to another country']?.count, 0);
-  const unknown = parseDfENumber(officialR['Unknown']?.count, 0) + parseDfENumber(officialR['Not recorded']?.count, 0);
 
   const totalCme = rawTotalCme;
-  const w8_12 = rawW8_12;
-  const w12_plus = rawW12_plus;
 
   // Yield is scoped to the selected tiers at the selected threshold, using this
   // authority's own published duration profile. Previously this multiplied the
@@ -124,14 +118,34 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
   const targetCases = scopedYield.cases;
   const totalYieldValue = scopedYield.value;
 
+  // Risk tier: in-scope cohort size at the active threshold (from the same
+  // scopedCohortAtThreshold above, via scopeCohort()) combined with DfE's
+  // published rate_per_100 — not estimated £ value. Same breakpoints as
+  // stratosCalculations.ts's computeSTRATOSLEAs, percentile-anchored to the
+  // actual distribution across the 153 authorities at Autumn 2025/26
+  // (~p95/p85/p70 on both measures). OR, not AND: a large authority can carry
+  // a big absolute in-scope cohort at an unremarkable rate, and a small
+  // authority can carry an anomalous rate at a modest headcount — requiring
+  // both would hide either kind of problem.
+  const inScopeForRisk = scopedCohortAtThreshold.inScopeAtThreshold;
+  const rateRawForRisk = currentTermData?.ratePer100Published;
+  const ratePer100ForRisk =
+    !rateRawForRisk || rateRawForRisk === 'x' || rateRawForRisk === 'low' ? 0 : parseDfENumber(rateRawForRisk, 0);
+
   let riskLevel: RiskLevel = 'Low';
-  if (w12_plus >= 300 || totalCme >= 1000 || totalYieldValue >= 500_000) {
-    riskLevel = 'Critical';
-  } else if (w12_plus >= 100 || unknown >= 200 || totalYieldValue >= 200_000) {
-    riskLevel = 'High';
-  } else if (w12_plus >= 30 || abroad >= 30 || totalYieldValue >= 50_000) {
-    riskLevel = 'Medium';
+  if (reasonDataAvailable) {
+    if (inScopeForRisk >= 200 || ratePer100ForRisk >= 1.2) {
+      riskLevel = 'Critical';
+    } else if (inScopeForRisk >= 80 || ratePer100ForRisk >= 0.6) {
+      riskLevel = 'High';
+    } else if (inScopeForRisk >= 30 || ratePer100ForRisk >= 0.4) {
+      riskLevel = 'Medium';
+    }
   }
+  // reasonDataAvailable false only for a term with no published reason
+  // breakdown, in which case riskLevel stays 'Low' as an inert placeholder —
+  // this whole block only renders inside the reasonDataAvailable branch of
+  // the "recovery" view mode below, so it's never shown to the user.
   const riskConfig = RISK_TIER_CONFIG[riskLevel];
 
   // 4-term longitudinal series for this LA. Yield per term via

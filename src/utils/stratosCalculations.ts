@@ -9,6 +9,7 @@ import {
   StratosRegionalRollup
 } from '../types';
 import { scopeCohort, computeYield } from '../data/cmeScope';
+import { termHasReasonData, ALL_REGIONS } from '../data/cmeData';
 
 export const DEFAULT_CALCULATOR_PARAMS: CalculatorParams = {
   recoveryPerCase: 2800,
@@ -26,7 +27,7 @@ export const RISK_TIER_CONFIG = {
     dotClass: 'bg-rose-500',
     borderClass: 'border-rose-300',
     bgClass: 'bg-rose-50/50',
-    description: '12+ wks ≥ 300 OR Total CME ≥ 1,000 OR Potential ≥ £500k',
+    description: 'In-scope cohort ≥ 200 OR published rate ≥ 1.2 per 100',
   },
   High: {
     label: 'High Priority',
@@ -34,7 +35,7 @@ export const RISK_TIER_CONFIG = {
     dotClass: 'bg-amber-500',
     borderClass: 'border-amber-300',
     bgClass: 'bg-amber-50/50',
-    description: '12+ wks ≥ 100 OR Unknown ≥ 200 OR Potential ≥ £200k',
+    description: 'In-scope cohort ≥ 80 OR published rate ≥ 0.6 per 100',
   },
   Medium: {
     label: 'Medium Priority',
@@ -42,7 +43,7 @@ export const RISK_TIER_CONFIG = {
     dotClass: 'bg-sky-500',
     borderClass: 'border-sky-300',
     bgClass: 'bg-sky-50/50',
-    description: '12+ wks ≥ 30 OR Abroad ≥ 30 OR Potential ≥ £50k',
+    description: 'In-scope cohort ≥ 30 OR published rate ≥ 0.4 per 100',
   },
   Low: {
     label: 'Low Priority',
@@ -154,15 +155,41 @@ export function computeSTRATOSLEAs(
     const w12_plus_pct = totalCme > 0 ? (w12_plus / totalCme) * 100 : 0;
     const avg_value_per_cme = totalCme > 0 ? total_potential / totalCme : 0;
 
-    // Risk Level Matrix Assignment
+    // Risk tier: in-scope cohort size at the active threshold (inScopeAtThreshold
+    // from scopeCohort() above, so it moves with the 8/12-week toggle the same
+    // way every yield figure does) combined with DfE's published rate_per_100.
+    // Previously thresholded against estimated £ value (£500k/£200k/£50k),
+    // calibrated to the unscoped ~£37m yield that no longer exists post-Stage-4.
+    // Breakpoints are percentile-anchored to the actual distribution across the
+    // 153 authorities at Autumn 2025/26 (~p95/p85/p70 on both measures), not
+    // round numbers. OR, not AND: a large authority can carry a big absolute
+    // in-scope cohort at an unremarkable rate, and a small authority can carry
+    // an anomalous rate at a modest headcount — requiring both would hide
+    // either kind of problem.
+    const riskDataAvailable = termHasReasonData(selectedTerm);
+    const inScopeForRisk = cohortAtThreshold.inScopeAtThreshold;
+    const rateRaw = termData?.ratePer100Published;
+    const ratePer100ForRisk = !rateRaw || rateRaw === 'x' || rateRaw === 'low' ? 0 : parseDfENumber(rateRaw, 0);
+
     let risk_level: RiskLevel = 'Low';
-    if (w12_plus >= 300 || totalCme >= 1000 || total_potential >= 500_000) {
-      risk_level = 'Critical';
-    } else if (w12_plus >= 100 || unknown >= 200 || total_potential >= 200_000) {
-      risk_level = 'High';
-    } else if (w12_plus >= 30 || abroad >= 30 || total_potential >= 50_000) {
-      risk_level = 'Medium';
+    if (riskDataAvailable) {
+      if (inScopeForRisk >= 200 || ratePer100ForRisk >= 1.2) {
+        risk_level = 'Critical';
+      } else if (inScopeForRisk >= 80 || ratePer100ForRisk >= 0.6) {
+        risk_level = 'High';
+      } else if (inScopeForRisk >= 30 || ratePer100ForRisk >= 0.4) {
+        risk_level = 'Medium';
+      }
     }
+    // riskDataAvailable false only for a term with no published reason
+    // breakdown, in which case risk_level stays 'Low' as an inert placeholder.
+    // Every current consumer (StratosRiskMatrix, StratosFinancialTable,
+    // StratosChartsSection, LADetailModal) already sits behind the same
+    // reasonDataAvailable/termHasReasonData gate at its tab or component level
+    // and shows the "Reason breakdown published from Autumn 2025/26 only"
+    // message instead of rendering this field — riskDataAvailable is exposed
+    // here too so a future direct consumer of LEACombined has the same signal
+    // rather than needing to re-derive it.
 
     return {
       code: la.code,
@@ -185,6 +212,7 @@ export function computeSTRATOSLEAs(
       avg_value_per_target_case: effectiveValuePerCase,
       avg_value_per_cme_case: Math.round(avg_value_per_cme),
       risk_level,
+      riskDataAvailable,
     };
   });
 }
@@ -232,8 +260,6 @@ export function computeStratosNationalAggregate(
     low_leas_count: lowCount,
   };
 }
-
-import { ALL_REGIONS } from '../data/cmeData';
 
 /**
  * Compute Regional Rollup for STRATOS Dashboard

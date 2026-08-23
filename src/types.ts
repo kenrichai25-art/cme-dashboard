@@ -208,6 +208,10 @@ export interface LEACombined {
   avg_value_per_target_case: number;
   avg_value_per_cme_case: number;
   risk_level: RiskLevel;
+  /** False when the term has no published reason breakdown — risk_level is
+   *  an inert 'Low' placeholder in that case and must not be rendered as a
+   *  real classification. */
+  riskDataAvailable: boolean;
 }
 
 export interface StratosNationalAggregate {
