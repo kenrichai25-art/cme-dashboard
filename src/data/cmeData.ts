@@ -497,6 +497,26 @@ export function calculateAggregate(
     totalCME = nationalRaw.total;
   }
 
+  // Same principle applied to the duration bands: the published National row
+  // carries its own duration breakdown, uprated the same way as the national
+  // total. Summing authorities previously gave 17,890 / 14,670 at 8/12 weeks
+  // against a published 17,800 / 14,600 — not a rounding gap, the same
+  // non-response uprating that totalCME above already accounts for.
+  if (isEngland && nationalRaw?.durations) {
+    const natDur = nationalRaw.durations;
+    const natLess2w = parseVal(natDur['Less than 2 weeks']?.count);
+    const natW2_4 = parseVal(natDur['2 to 4 weeks']?.count);
+    const natW4_8 = parseVal(natDur['4 to 8 weeks']?.count);
+    const natW8_12 = parseVal(natDur['8 to 12 weeks']?.count);
+    const natW12_26 = parseVal(natDur['12 to 26 weeks']?.count);
+    const natW26_52 = parseVal(natDur['26 to 52 weeks']?.count);
+    const natW52p = parseVal(natDur['Over 52 weeks']?.count);
+    weeks1To8 = natLess2w + natW2_4 + natW4_8;
+    weeks8To12 = natW8_12;
+    weeks12Plus = natW12_26 + natW26_52 + natW52p;
+    longTermMissingCount = weeks12Plus;
+  }
+
   // DfE's own published rate per 100 pupils for this exact selection, read
   // verbatim — never computed. Denominator: ONS mid-year population estimates,
   // ages 5–16. Only National, a single Region, or a single Local Authority
