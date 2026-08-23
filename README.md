@@ -1,20 +1,23 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# CME Compliance Dashboard
 
-# Run and deploy your AI Studio app
+A dashboard for analysing Department for Education (DfE) published statistics on
+Children Missing Education (CME), built to support HMRC Child Benefit compliance
+targeting. It reads DfE's official CME statistics (published via the Explore
+Education Statistics API) at the National, Regional, and Local Authority level,
+and surfaces recovery yield, scope tiers, and outcome tracking on top of that
+published data.
 
-This contains everything you need to run your app locally.
+## Run locally
 
-View your app in AI Studio: https://ai.studio/apps/240282f0-ec93-4594-b335-6e6b167710b4
-
-## Run Locally
-
-**Prerequisites:**  Node.js
-
+**Prerequisites:** Node.js
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
+2. Run the app:
    `npm run dev`
+
+## Figures are estimates where noted
+
+Any figure derived from scope-tier assumptions (rather than read directly from a
+published DfE table) is marked with an `Est` badge — see `src/data/cmeScope.ts`
+for the tiers, thresholds, and estimation method behind those numbers.
