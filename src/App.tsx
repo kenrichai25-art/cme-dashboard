@@ -27,10 +27,13 @@ import {
   LOCAL_AUTHORITIES_DATA,
   calculateAggregate,
   formatUKNumber,
-  TOTAL_AUTHORITIES_COUNT
+  TOTAL_AUTHORITIES_COUNT,
+  termHasReasonData,
+  REASON_DATA_UNAVAILABLE_MESSAGE
 } from './data/cmeData';
 import { DFE_REASON_CATEGORIES, parseCell, SCOPE_TIERS } from './data/cmeScope';
 import { EstimateMarker } from './components/stratos/EstimateMarker';
+import { ReasonDataUnavailable } from './components/ReasonDataUnavailable';
 import { 
   DfeApiStatus, 
   testDfeApiConnection, 
@@ -173,6 +176,12 @@ export default function App() {
     return computeSTRATOSLEAs(LOCAL_AUTHORITIES_DATA, filters.selectedTerm, calculatorParams);
   }, [filters.selectedTerm, calculatorParams]);
 
+  // Duration is published for every term from 2024/25 onward, but Reason is
+  // published for Autumn 2025/26 only. Every panel built from scopeCohort() /
+  // computeYield() — yield, scope tiers, risk classification — depends on
+  // Reason and must check this before rendering.
+  const reasonDataAvailable = termHasReasonData(filters.selectedTerm);
+
   // Human-readable summary of which tiers and threshold the yield figures reflect.
   const activeScopeSummary = useMemo(() => {
     const ids = calculatorParams.includeTiers ?? ['abroad'];
@@ -258,13 +267,19 @@ export default function App() {
       // Largest published DfE category, named verbatim. Previously this reported
       // one of seven invented buckets, which renamed and merged published
       // categories; the published category name is the only defensible value.
-      let topReason = 'Not available';
-      let topReasonCount = -1;
-      for (const reason of DFE_REASON_CATEGORIES) {
-        const value = parseCell(d?.officialReasons?.[reason]?.count).value;
-        if (value != null && value > topReasonCount) {
-          topReasonCount = value;
-          topReason = reason;
+      // Reason is published for Autumn 2025/26 only — every cell is 'x' for
+      // earlier terms, which would otherwise leave 'Not available' by
+      // coincidence rather than by an explicit check.
+      let topReason = REASON_DATA_UNAVAILABLE_MESSAGE;
+      if (termHasReasonData(term)) {
+        let topReasonCount = -1;
+        topReason = 'Not available';
+        for (const reason of DFE_REASON_CATEGORIES) {
+          const value = parseCell(d?.officialReasons?.[reason]?.count).value;
+          if (value != null && value > topReasonCount) {
+            topReasonCount = value;
+            topReason = reason;
+          }
         }
       }
 
@@ -506,43 +521,53 @@ export default function App() {
                 </select>
               </div>
 
-              <div className="text-xs text-neutral-500 font-medium flex items-center gap-1.5">
-                <span>
-                  Targeting <strong className="text-emerald-700 font-bold">{stratosNationalAggregate.total_target_cases.toLocaleString('en-GB')}</strong> Actionable Child Benefit Cases across England
-                  <span className="text-neutral-400"> ({activeScopeSummary})</span>
-                </span>
-                <EstimateMarker />
-              </div>
+              {reasonDataAvailable ? (
+                <div className="text-xs text-neutral-500 font-medium flex items-center gap-1.5">
+                  <span>
+                    Targeting <strong className="text-emerald-700 font-bold">{stratosNationalAggregate.total_target_cases.toLocaleString('en-GB')}</strong> Actionable Child Benefit Cases across England
+                    <span className="text-neutral-400"> ({activeScopeSummary})</span>
+                  </span>
+                  <EstimateMarker />
+                </div>
+              ) : (
+                <span className="text-xs text-neutral-500 font-medium">{REASON_DATA_UNAVAILABLE_MESSAGE}</span>
+              )}
             </div>
 
-            {/* Interactive Calculator Sliders */}
-            <StratosCalculatorSettings
-              params={calculatorParams}
-              onChangeParams={setCalculatorParams}
-              onResetParams={() => setCalculatorParams(DEFAULT_CALCULATOR_PARAMS)}
-            />
+            {reasonDataAvailable ? (
+              <>
+                {/* Interactive Calculator Sliders */}
+                <StratosCalculatorSettings
+                  params={calculatorParams}
+                  onChangeParams={setCalculatorParams}
+                  onResetParams={() => setCalculatorParams(DEFAULT_CALCULATOR_PARAMS)}
+                />
 
-            {/* STRATOS 5 Dynamic KPI Summary Tiles */}
-            <StratosKPICards
-              stats={stratosNationalAggregate}
-              termLabel={filters.selectedTerm}
-              durationThreshold={calculatorParams.durationThreshold ?? 8}
-            />
+                {/* STRATOS 5 Dynamic KPI Summary Tiles */}
+                <StratosKPICards
+                  stats={stratosNationalAggregate}
+                  termLabel={filters.selectedTerm}
+                  durationThreshold={calculatorParams.durationThreshold ?? 8}
+                />
 
-            {/* Visual Analytics & Breakdown */}
-            <StratosChartsSection
-              leas={stratosCombinedLEAs}
-              regionalRollups={stratosRegionalRollups}
-              nationalAggregate={stratosNationalAggregate}
-              onSelectLA={handleSelectLA}
-            />
+                {/* Visual Analytics & Breakdown */}
+                <StratosChartsSection
+                  leas={stratosCombinedLEAs}
+                  regionalRollups={stratosRegionalRollups}
+                  nationalAggregate={stratosNationalAggregate}
+                  onSelectLA={handleSelectLA}
+                />
 
-            {/* STRATOS Master Financial Table */}
-            <StratosFinancialTable
-              leas={stratosCombinedLEAs}
-              onSelectLA={handleSelectLA}
-              academicYear={filters.selectedTerm}
-            />
+                {/* STRATOS Master Financial Table */}
+                <StratosFinancialTable
+                  leas={stratosCombinedLEAs}
+                  onSelectLA={handleSelectLA}
+                  academicYear={filters.selectedTerm}
+                />
+              </>
+            ) : (
+              <ReasonDataUnavailable />
+            )}
           </div>
         )}
 
@@ -551,11 +576,15 @@ export default function App() {
         {/* ========================================================= */}
         {activeTab === 'risk-matrix' && (
           <div>
-            <StratosRiskMatrix
-              leas={stratosCombinedLEAs}
-              onSelectLA={handleSelectLA}
-              academicYear={filters.selectedTerm}
-            />
+            {reasonDataAvailable ? (
+              <StratosRiskMatrix
+                leas={stratosCombinedLEAs}
+                onSelectLA={handleSelectLA}
+                academicYear={filters.selectedTerm}
+              />
+            ) : (
+              <ReasonDataUnavailable />
+            )}
           </div>
         )}
 

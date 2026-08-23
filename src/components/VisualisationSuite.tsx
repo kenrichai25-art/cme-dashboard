@@ -48,10 +48,12 @@ import {
   formatGBP,
   getPublishedBreakdown,
   SCOPE_TIER_COLORS,
-  TOTAL_AUTHORITIES_COUNT
+  TOTAL_AUTHORITIES_COUNT,
+  termHasReasonData
 } from '../data/cmeData';
 import { scopeCohort, buildReasonTable, SCOPE_TIERS } from '../data/cmeScope';
 import officialDataJson from '../data/officialDfeData.json';
+import { ReasonDataUnavailable } from './ReasonDataUnavailable';
 
 interface VisualisationSuiteProps {
   currentStats: AggregatedStats;
@@ -227,6 +229,9 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
   // Both read the verbatim published breakdown via cmeScope.ts. No published
   // category is renamed, merged or dropped, and nothing here is an estimate:
   // these are published reason counts, not reason-by-duration figures.
+  // Reason is published for Autumn 2025/26 only, unlike Duration, which is
+  // published for every term shown — this panel must check before rendering.
+  const reasonDataAvailable = termHasReasonData(filters.selectedTerm);
   const publishedBreakdown = getPublishedBreakdown(filters.selectedTerm, {
     la: currentLA,
     region: filters.selectedRegion,
@@ -591,7 +596,9 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
             </div>
           </div>
 
-          {reasonDisplayMode === 'all20' ? (
+          {!reasonDataAvailable ? (
+            <ReasonDataUnavailable className="mt-5" />
+          ) : reasonDisplayMode === 'all20' ? (
             /* Reference table: all 20 published categories, verbatim.
                Published counts only — no estimates and no yield. */
             <div className="mt-5 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
@@ -699,15 +706,17 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
           )}
         </div>
 
-        <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500">
-          <span className="flex items-center gap-1">
-            <Info className="w-3.5 h-3.5 text-neutral-400" />
-            <span>Published by DfE as an independent 1D statutory distribution on census day</span>
-          </span>
-          <span className="font-semibold text-neutral-800">
-            Published Total: {formatUKNumber(scopedCohort.totalCME)}
-          </span>
-        </div>
+        {reasonDataAvailable && (
+          <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500">
+            <span className="flex items-center gap-1">
+              <Info className="w-3.5 h-3.5 text-neutral-400" />
+              <span>Published by DfE as an independent 1D statutory distribution on census day</span>
+            </span>
+            <span className="font-semibold text-neutral-800">
+              Published Total: {formatUKNumber(scopedCohort.totalCME)}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Visualisation 4: Duration Intervals & Actionable Thresholds (5 cols) */}

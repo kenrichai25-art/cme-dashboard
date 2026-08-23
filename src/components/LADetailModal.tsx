@@ -45,9 +45,12 @@ import {
   formatUKNumber,
   formatGBP,
   formatRatePer100,
-  RATE_PER_100_LABEL
+  RATE_PER_100_LABEL,
+  termHasReasonData,
+  REASON_DATA_UNAVAILABLE_MESSAGE
 } from '../data/cmeData';
 import { scopeCohort, computeYield } from '../data/cmeScope';
+import { ReasonDataUnavailable } from './ReasonDataUnavailable';
 import { 
   DEFAULT_CALCULATOR_PARAMS, 
   RISK_TIER_CONFIG, 
@@ -76,6 +79,11 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
 
   const currentTermData = la.termsData[activeTermTab];
   const chronologicalTerms = [...ACADEMIC_TERMS].reverse();
+
+  // Reason is published for Autumn 2025/26 only, keyed to the term tab
+  // selected within this modal (not the main filter bar's term). Duration is
+  // published for every term shown and is never gated by this.
+  const reasonDataAvailable = termHasReasonData(activeTermTab);
 
   // Financial Recovery & Yield Computations for this LA and term
   const recoveryPerCase = calculatorParams.recoveryPerCase;
@@ -315,30 +323,34 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
 
           {/* View Mode 1: 20 Official Reasons */}
           {detailViewMode === 'reasons' && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-neutral-500 mb-1">
-                <span>All 20 Statutory Reason categories published by DfE for {activeTermTab}</span>
-                <span className="font-semibold text-neutral-800">Total Classified: {formatUKNumber(totalCme)}</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
-                {officialReasonsList.map((r, idx) => (
-                  <div key={idx} className="p-2.5 rounded-xl bg-neutral-50/80 border border-neutral-200/80 flex items-center justify-between text-xs">
-                    <div className="flex items-center space-x-2 truncate mr-2">
-                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: r.color }} />
-                      <span className="text-neutral-800 font-medium truncate" title={r.name}>{r.name}</span>
+            reasonDataAvailable ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs text-neutral-500 mb-1">
+                  <span>All 20 Statutory Reason categories published by DfE for {activeTermTab}</span>
+                  <span className="font-semibold text-neutral-800">Total Classified: {formatUKNumber(totalCme)}</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+                  {officialReasonsList.map((r, idx) => (
+                    <div key={idx} className="p-2.5 rounded-xl bg-neutral-50/80 border border-neutral-200/80 flex items-center justify-between text-xs">
+                      <div className="flex items-center space-x-2 truncate mr-2">
+                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: r.color }} />
+                        <span className="text-neutral-800 font-medium truncate" title={r.name}>{r.name}</span>
+                      </div>
+                      <div className="flex items-center space-x-2 flex-shrink-0 font-mono text-[11px]">
+                        <span className="font-bold text-neutral-900">
+                          {r.rawCount === 'low' ? 'low (<5)' : formatUKNumber(r.numCount)}
+                        </span>
+                        {r.rawCount !== 'low' && r.rawCount !== '0' && (
+                          <span className="text-neutral-400">({r.percent}%)</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2 flex-shrink-0 font-mono text-[11px]">
-                      <span className="font-bold text-neutral-900">
-                        {r.rawCount === 'low' ? 'low (<5)' : formatUKNumber(r.numCount)}
-                      </span>
-                      {r.rawCount !== 'low' && r.rawCount !== '0' && (
-                        <span className="text-neutral-400">({r.percent}%)</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <ReasonDataUnavailable />
+            )
           )}
 
           {/* View Mode 2: 8 Official Durations */}
@@ -374,24 +386,33 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
           {/* View Mode 3: STRATOS Yield Model */}
           {detailViewMode === 'recovery' && (
             <div className="space-y-4">
-              <div className="p-4 rounded-2xl bg-[#1C1C1C] text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div>
+              {reasonDataAvailable ? (
+                <div className="p-4 rounded-2xl bg-[#1C1C1C] text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="text-[11px] uppercase tracking-wider text-emerald-400 font-bold">
+                      Projected Financial Recovery Yield
+                    </span>
+                    <p className="text-2xl font-extrabold text-white mt-0.5 font-mono">
+                      {formatGBP(totalYieldValue)}
+                    </p>
+                    <p className="text-xs text-neutral-400 mt-1">
+                      Based on {formatUKNumber(targetCases)} persistent CME cases (8+ weeks) @ {formatGBP(recoveryPerCase)} / case ({Math.round(strikeRate * 100)}% strike rate)
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${riskConfig.badgeClass}`}>
+                      {riskConfig.label}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 rounded-2xl bg-[#1C1C1C] text-white">
                   <span className="text-[11px] uppercase tracking-wider text-emerald-400 font-bold">
                     Projected Financial Recovery Yield
                   </span>
-                  <p className="text-2xl font-extrabold text-white mt-0.5 font-mono">
-                    {formatGBP(totalYieldValue)}
-                  </p>
-                  <p className="text-xs text-neutral-400 mt-1">
-                    Based on {formatUKNumber(targetCases)} persistent CME cases (8+ weeks) @ {formatGBP(recoveryPerCase)} / case ({Math.round(strikeRate * 100)}% strike rate)
-                  </p>
+                  <p className="text-sm text-neutral-300 mt-2">{REASON_DATA_UNAVAILABLE_MESSAGE}</p>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${riskConfig.badgeClass}`}>
-                    {riskConfig.label}
-                  </span>
-                </div>
-              </div>
+              )}
 
               {/* 4-Term Historical Trajectory */}
               <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80">

@@ -241,6 +241,33 @@ export interface PublishedBreakdown {
   source: 'national' | 'region' | 'authority' | 'summed';
 }
 
+// Terms with a published reason breakdown, derived from the data rather than
+// hardcoded. Duration is published for every term in ACADEMIC_TERMS (2024/25
+// onward), but Reason is currently published for Autumn 2025/26 only — every
+// earlier term has every reason cell marked 'x' (not available), checked here
+// against the published National row so this stays correct if DfE publish
+// reason data for another term.
+const REASON_DATA_TERMS = new Set<AcademicTerm>(
+  ACADEMIC_TERMS.filter((term) => {
+    const row = (officialDataJson.national as any)?.[mapTermKey(term)];
+    const reasons = row?.reasons;
+    return !!reasons && Object.values(reasons).some((cell: any) => cell?.count !== 'x');
+  })
+);
+
+/**
+ * Whether DfE have published a reason breakdown for this term. Any component
+ * that reads officialReasons, or calls scopeCohort() / computeYield(), must
+ * check this before rendering — for a term without reason data those cells
+ * are all 'x', which parses to null and silently sums to zero, so the naive
+ * result looks like an authentic zero rather than "not published".
+ */
+export function termHasReasonData(term: AcademicTerm): boolean {
+  return REASON_DATA_TERMS.has(term);
+}
+
+export const REASON_DATA_UNAVAILABLE_MESSAGE = 'Reason breakdown published from Autumn 2025/26 only';
+
 /**
  * Resolve the published reason and duration breakdowns for the current selection.
  *

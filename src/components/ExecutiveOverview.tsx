@@ -53,8 +53,11 @@ import {
   SCOPE_TIER_COLORS,
   TOTAL_AUTHORITIES_COUNT,
   formatRatePer100,
-  RATE_PER_100_LABEL
+  RATE_PER_100_LABEL,
+  termHasReasonData,
+  REASON_DATA_UNAVAILABLE_MESSAGE
 } from '../data/cmeData';
+import { ReasonDataUnavailable } from './ReasonDataUnavailable';
 import { scopeCohort, SCOPE_TIERS } from '../data/cmeScope';
 import { EstimateMarker } from './stratos/EstimateMarker';
 
@@ -81,6 +84,10 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
   stratosNationalAggregate,
 }) => {
   const effectiveValPerCase = calculatorParams.recoveryPerCase * calculatorParams.strikeRate;
+
+  // Reason is published for Autumn 2025/26 only; Duration is published for
+  // every term shown. Anything built from scopeCohort() must check this.
+  const reasonDataAvailable = termHasReasonData(filters.selectedTerm);
 
   // Which tiers and threshold the yield figures on this page reflect.
   const activeScopeSummary = (() => {
@@ -290,26 +297,39 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
         {/* Card 4: Spotlight Hero Metric Card (Modelled Recovery Yield) */}
         <div className="bg-[#1C1C1C] text-white p-5 sm:p-6 rounded-3xl shadow-lg border border-[#FE5729]/40 hover:border-[#FE5729]/70 transition-all flex flex-col justify-between relative overflow-hidden group">
           <div className="absolute -right-6 -bottom-6 w-28 h-28 bg-[#FE5729]/25 rounded-full blur-xl pointer-events-none group-hover:bg-[#FE5729]/35 transition-all" />
-          <div>
-            <div className="flex items-center justify-between mb-3">
+          {reasonDataAvailable ? (
+            <>
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
+                    CME Financial Impact Potential
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <EstimateMarker />
+                    <div className="px-2.5 py-0.5 rounded-full bg-[#FE5729] text-white text-[10px] font-extrabold tracking-wide shadow-2xs">
+                      SPOTLIGHT
+                    </div>
+                  </div>
+                </div>
+                <p className="text-3xl sm:text-4xl lg:text-[2.6rem] font-semibold text-[#FE5729] tracking-tight leading-none">
+                  {formatUKCurrency(nationalTotalYield)}
+                </p>
+              </div>
+              <div className="mt-4 pt-3 border-t border-neutral-800/80 flex items-center justify-between text-xs text-neutral-300 font-medium">
+                <span>Actionable ({formatUKNumber(nationalTarget8Plus)} cases) &middot; {activeScopeSummary}</span>
+                <TrendingUp className="w-4 h-4 text-[#FE5729]" />
+              </div>
+            </>
+          ) : (
+            <div className="relative z-10">
               <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
                 CME Financial Impact Potential
               </span>
-              <div className="flex items-center gap-1.5">
-                <EstimateMarker />
-                <div className="px-2.5 py-0.5 rounded-full bg-[#FE5729] text-white text-[10px] font-extrabold tracking-wide shadow-2xs">
-                  SPOTLIGHT
-                </div>
-              </div>
+              <p className="text-sm text-neutral-300 mt-3 leading-relaxed">
+                {REASON_DATA_UNAVAILABLE_MESSAGE}
+              </p>
             </div>
-            <p className="text-3xl sm:text-4xl lg:text-[2.6rem] font-semibold text-[#FE5729] tracking-tight leading-none">
-              {formatUKCurrency(nationalTotalYield)}
-            </p>
-          </div>
-          <div className="mt-4 pt-3 border-t border-neutral-800/80 flex items-center justify-between text-xs text-neutral-300 font-medium">
-            <span>Actionable ({formatUKNumber(nationalTarget8Plus)} cases) &middot; {activeScopeSummary}</span>
-            <TrendingUp className="w-4 h-4 text-[#FE5729]" />
-          </div>
+          )}
         </div>
 
       </div>
@@ -433,38 +453,46 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
               Published reason counts grouped by Child Benefit relevance. Published figures, not estimates.
             </p>
 
-            {/* Visual list of scope tiers */}
-            <div className="mt-4 space-y-3">
-              {reasonsData.map((r, index) => (
-                <div key={r.key} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs sm:text-sm">
-                    <span className="font-semibold text-neutral-800 truncate max-w-[240px]" title={r.rationale}>
-                      {r.label}
-                      {r.suppressedCells > 0 && (
-                        <span className="text-neutral-400 font-normal"> +{r.suppressedCells} low</span>
-                      )}
-                    </span>
-                    <span className="font-semibold text-[#1C1C1C]">
-                      {formatUKNumber(r.count)} <span className="text-neutral-400 font-normal">({r.percent}%)</span>
-                    </span>
+            {reasonDataAvailable ? (
+              /* Visual list of scope tiers */
+              <div className="mt-4 space-y-3">
+                {reasonsData.map((r, index) => (
+                  <div key={r.key} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs sm:text-sm">
+                      <span className="font-semibold text-neutral-800 truncate max-w-[240px]" title={r.rationale}>
+                        {r.label}
+                        {r.suppressedCells > 0 && (
+                          <span className="text-neutral-400 font-normal"> +{r.suppressedCells} low</span>
+                        )}
+                      </span>
+                      <span className="font-semibold text-[#1C1C1C]">
+                        {formatUKNumber(r.count)} <span className="text-neutral-400 font-normal">({r.percent}%)</span>
+                      </span>
+                    </div>
+                    <div className="w-full bg-[#F4F4F6] rounded-full h-2.5 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          index === 0 ? 'bg-[#FE5729]' : index === 1 ? 'bg-amber-500' : 'bg-neutral-600'
+                        }`}
+                        style={{
+                          width: `${r.percent}%`,
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-[#F4F4F6] rounded-full h-2.5 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-300 ${
-                        index === 0 ? 'bg-[#FE5729]' : index === 1 ? 'bg-amber-500' : 'bg-neutral-600'
-                      }`}
-                      style={{
-                        width: `${r.percent}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <ReasonDataUnavailable className="mt-4" />
+            )}
           </div>
 
           <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500">
-            <span>In scope: <strong className="text-[#1C1C1C]">{formatUKNumber(inScopePublishedTotal)}</strong></span>
+            {reasonDataAvailable ? (
+              <span>In scope: <strong className="text-[#1C1C1C]">{formatUKNumber(inScopePublishedTotal)}</strong></span>
+            ) : (
+              <span />
+            )}
             <button
               onClick={() => onNavigateTab('dfe-intelligence')}
               className="text-[#FE5729] hover:text-[#E0461B] font-bold hover:underline cursor-pointer"
