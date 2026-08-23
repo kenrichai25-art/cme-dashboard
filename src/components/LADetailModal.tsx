@@ -50,13 +50,21 @@ import {
   REASON_DATA_UNAVAILABLE_MESSAGE,
   computeSelectionYield
 } from '../data/cmeData';
-import { scopeCohort, computeYield } from '../data/cmeScope';
+import { scopeCohort, computeYield, ScopeTierId } from '../data/cmeScope';
 import { ReasonDataUnavailable } from './ReasonDataUnavailable';
-import { 
-  DEFAULT_CALCULATOR_PARAMS, 
-  RISK_TIER_CONFIG, 
-  parseDfENumber 
+import {
+  DEFAULT_CALCULATOR_PARAMS,
+  RISK_TIER_CONFIG,
+  parseDfENumber
 } from '../utils/stratosCalculations';
+import {
+  loadOutcomeStore,
+  saveOutcomeEntry,
+  getOutcomeEntry,
+  realisedStrikeRate,
+  OutcomeStore,
+} from '../data/outcomeTracking';
+import { EstimateMarker } from './stratos/EstimateMarker';
 
 interface LADetailModalProps {
   la: LocalAuthority | null;
@@ -76,7 +84,21 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
   const [activeTermTab, setActiveTermTab] = useState<AcademicTerm>(selectedTerm);
   const [detailViewMode, setDetailViewMode] = useState<'reasons' | 'durations' | 'recovery'>('reasons');
 
+  // Stage 11: locally-tracked outcome counts (cases worked / confirmed a
+  // payment error), per authority and per tier. Loaded once from
+  // localStorage; edits write through immediately via handleOutcomeChange.
+  const [outcomeStore, setOutcomeStore] = useState<OutcomeStore>(loadOutcomeStore);
+
   if (!la) return null;
+
+  const handleOutcomeChange = (tierId: ScopeTierId, field: 'worked' | 'confirmed', value: number) => {
+    const current = getOutcomeEntry(outcomeStore, la.code, tierId) ?? { worked: 0, confirmed: 0 };
+    const safeValue = Math.max(0, Math.round(value) || 0);
+    const next = { ...current, [field]: safeValue };
+    // Confirmed errors can't exceed cases actually worked.
+    if (next.confirmed > next.worked) next.confirmed = next.worked;
+    setOutcomeStore(saveOutcomeEntry(outcomeStore, la.code, tierId, next));
+  };
 
   const currentTermData = la.termsData[activeTermTab];
   const chronologicalTerms = [...ACADEMIC_TERMS].reverse();
@@ -452,6 +474,79 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
                       <Line yAxisId="right" type="monotone" dataKey="recoveryYield" name="Modeled Yield" stroke="#059669" strokeWidth={2} />
                     </ComposedChart>
                   </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Outcome Tracking (Stage 11) — locally-tracked worked/confirmed
+                  counts, per tier. Independent of reasonDataAvailable: this is
+                  the authority's own casework record, not a DfE-published
+                  figure, so it stays visible for every term. Purely display —
+                  editing it changes nothing above (yield, risk, trajectory). */}
+              <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80">
+                <h4 className="text-xs font-extrabold text-neutral-800 mb-1 flex items-center gap-1.5 font-display">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#FE5729]" />
+                  <span>Outcome Tracking — Realised Strike Rate</span>
+                </h4>
+                <p className="text-[11px] text-neutral-400 mb-3">
+                  Record cases actually worked and how many confirmed a payment error, per tier. Stored locally in
+                  this browser only. Until an authority has worked cases, its rate shows the national {Math.round(
+                    realisedStrikeRate(null).rate * 100
+                  )}% default — never a measurement.
+                </p>
+
+                <div className="space-y-2.5">
+                  {scopedCohortAtThreshold.tiers
+                    .filter((t) => t.tier.countsTowardYield)
+                    .map((t) => {
+                      const entry = getOutcomeEntry(outcomeStore, la.code, t.tier.id);
+                      const realised = realisedStrikeRate(entry);
+                      return (
+                        <div key={t.tier.id} className="p-3 rounded-2xl bg-white border border-neutral-200/80">
+                          <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="text-xs font-bold text-[#1C1C1C] truncate">{t.tier.label}</span>
+                              <span className="text-[10px] text-neutral-400 whitespace-nowrap" title="Estimated in-scope cohort for this tier at the active threshold">
+                                (~{formatUKNumber(t.estimatedAtThreshold)} est. <EstimateMarker />)
+                              </span>
+                            </div>
+                            <span
+                              className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full whitespace-nowrap ${
+                                realised.measured
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                  : 'bg-neutral-100 text-neutral-500 border border-neutral-200'
+                              }`}
+                              title={realised.measured ? `Measured from ${realised.worked} worked cases` : 'National default — not yet measured for this authority'}
+                            >
+                              {Math.round(realised.rate * 100)}% {realised.measured ? `(measured, n=${realised.worked})` : '(default)'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-3 mt-2.5">
+                            <label className="flex items-center gap-1.5 text-[11px] text-neutral-500">
+                              <span>Cases worked</span>
+                              <input
+                                type="number"
+                                min={0}
+                                value={entry?.worked ?? 0}
+                                onChange={(e) => handleOutcomeChange(t.tier.id, 'worked', Number(e.target.value))}
+                                className="w-16 px-2 py-1 text-xs font-semibold text-neutral-800 bg-[#F4F4F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FE5729]/30 focus:border-[#FE5729]"
+                              />
+                            </label>
+                            <label className="flex items-center gap-1.5 text-[11px] text-neutral-500">
+                              <span>Confirmed error</span>
+                              <input
+                                type="number"
+                                min={0}
+                                max={entry?.worked ?? 0}
+                                value={entry?.confirmed ?? 0}
+                                onChange={(e) => handleOutcomeChange(t.tier.id, 'confirmed', Number(e.target.value))}
+                                className="w-16 px-2 py-1 text-xs font-semibold text-neutral-800 bg-[#F4F4F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FE5729]/30 focus:border-[#FE5729]"
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
             </div>
