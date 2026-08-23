@@ -1,7 +1,7 @@
 import fs from 'fs';
 import Papa from 'papaparse';
 
-const csvText = fs.readFileSync("cme_census_official.csv", "utf8");
+const csvText = fs.readFileSync("cme_census.csv", "utf8");
 const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
 
 console.log("Processing", parsed.data.length, "official rows...");

@@ -30,7 +30,7 @@ const PUBLICATION_SEARCH = 'children missing education';
 // The data set we expect. Discovery will confirm this rather than trust it.
 const EXPECTED_DATA_SET_TITLE = /children missing education at census date/i;
 
-const CSV_PATH = path.join(ROOT, 'cme_census_official.csv');
+const CSV_PATH = path.join(ROOT, 'cme_census.csv');
 const JSON_PATH = path.join(ROOT, 'src', 'data', 'officialDfeData.json');
 const PROVENANCE_PATH = path.join(ROOT, 'src', 'data', 'dfe-provenance.json');
 

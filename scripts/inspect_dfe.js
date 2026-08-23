@@ -7,8 +7,8 @@ async function run() {
   const csvText = await res.text();
   
   // Save dataset to disk for persistence & offline availability
-  fs.writeFileSync("cme_census_official.csv", csvText);
-  console.log("Saved cme_census_official.csv (" + Math.round(csvText.length / 1024) + " KB)");
+  fs.writeFileSync("cme_census.csv", csvText);
+  console.log("Saved cme_census.csv (" + Math.round(csvText.length / 1024) + " KB)");
 
   const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
   console.log("Parsed rows:", parsed.data.length);

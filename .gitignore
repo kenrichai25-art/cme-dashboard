@@ -1,3 +1,9 @@
 node_modules/
 dist/
 .DS_Store
+
+# Reference/working files, not application data — not meant to ship.
+# cme_census.csv is the raw 73,710-row DfE source dataset (see scripts/);
+# PROJECT_NOTE.md is a running project log.
+/cme_census.csv
+/PROJECT_NOTE.md
