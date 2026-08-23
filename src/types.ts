@@ -77,9 +77,11 @@ export interface TermDataPoint {
   term: AcademicTerm;
   totalCME: number | 'c'; // 'c' is DfE confidential/suppressed <5
   totalRaw?: string; // verbatim DfE string (e.g. '30', 'low', 'x')
-  compulsoryPupils: number;
-  ratePer1000: number | 'c';
-  ratePer100Published?: string; // e.g. '0.4000000' or 'x'
+  // DfE's own published rate per 100 pupils, verbatim (e.g. '0.4000000' or 'x'
+  // where not published). Denominator: ONS mid-year population estimates,
+  // ages 5–16. This is the only rate shown anywhere — no second rate is
+  // computed from it or from any other field.
+  ratePer100Published?: string;
   longTermMissingCount: number | 'c'; // > 12 weeks
   longTermMissingPercent: number; // calculated % of CME
   durationWeeks: DurationBreakdown;
@@ -104,8 +106,11 @@ export interface AggregatedStats {
   term: AcademicTerm;
   selectedLabel: string;
   totalCME: number;
-  totalPupils: number;
-  ratePer1000: number;
+  // DfE's published rate per 100 pupils for this exact selection, verbatim.
+  // Only set for National, a single Region, or a single Local Authority —
+  // DfE do not publish a rate for an arbitrary group of authorities, and none
+  // is computed here to fill the gap.
+  ratePer100Published?: string;
   longTermMissingCount: number;
   longTermMissingPercent: number;
   durationWeeks: {
@@ -118,7 +123,6 @@ export interface AggregatedStats {
   // Deltas against previous available term
   prevTerm?: AcademicTerm;
   totalCMEDeltaPercent?: number;
-  ratePer1000DeltaPercent?: number;
   longTermPercentDelta?: number;
 }
 
@@ -188,8 +192,6 @@ export interface LEACombined {
   region: Region;
   tier: string;
   total_cme: number;
-  compulsory_pupils: number;
-  cme_rate_per_1000: number;
   w1_8_count: number;
   w8_12_count: number;
   w12_plus: number;

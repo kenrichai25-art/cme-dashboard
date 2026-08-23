@@ -172,16 +172,6 @@ export const LOCAL_AUTHORITIES_DATA: LocalAuthority[] = dedupedAuthorities.map((
       ? Number(((weeks12Plus / totalCME) * 100).toFixed(1))
       : 0;
 
-    // Approximate school population for rates (ONS / DfE school census baseline)
-    const basePupils = 48000;
-    const compulsoryPupils = Math.max(8000, Math.round(parseVal(rawTerm.ratePer100) > 0 
-      ? (parseVal(totalCME) / (parseVal(rawTerm.ratePer100) / 100))
-      : basePupils));
-
-    const ratePer1000 = (totalCME && totalCME !== 'c' && compulsoryPupils > 0)
-      ? Number(((totalCME / compulsoryPupils) * 1000).toFixed(2))
-      : 'c';
-
     // Year groups
     const yg = rawTerm.yearGroups || {};
     const primaryCount = parseVal(yg['Reception']?.count) + parseVal(yg['Year 1']?.count) + parseVal(yg['Year 2']?.count) + parseVal(yg['Year 3']?.count) + parseVal(yg['Year 4']?.count) + parseVal(yg['Year 5']?.count) + parseVal(yg['Year 6']?.count);
@@ -191,8 +181,6 @@ export const LOCAL_AUTHORITIES_DATA: LocalAuthority[] = dedupedAuthorities.map((
       term,
       totalCME,
       totalRaw,
-      compulsoryPupils,
-      ratePer1000,
       ratePer100Published: rawTerm.ratePer100 || 'x',
       longTermMissingCount,
       longTermMissingPercent,
@@ -344,25 +332,34 @@ export function getPublishedBreakdown(
   };
 }
 
+export interface AggregateScope {
+  /** True only for the whole-England selection. Not inferred from selectedLabel text. */
+  isEngland?: boolean;
+  /** Set when the selection is exactly one DfE region. */
+  region?: Region;
+}
+
 /**
- * Calculate aggregate totals for national or regional filters from authentic DfE published rows
+ * Calculate aggregate totals for national, regional or LA selections from
+ * authentic DfE published rows.
+ *
+ * `scope` is an explicit description of what `authorities` represents — it is
+ * never inferred from `selectedLabel`, which is display text a caller can
+ * change freely (e.g. the region "East of England" contains the substring
+ * "England", so matching on label text previously misidentified it as the
+ * national selection and returned the national total for that region).
  */
 export function calculateAggregate(
   authorities: LocalAuthority[],
   term: AcademicTerm,
-  selectedLabel: string
+  selectedLabel: string,
+  scope: AggregateScope = {}
 ): AggregatedStats {
   const termKey = mapTermKey(term);
-
-  // If this is national, check if we have the published national headline directly.
-  // Note: this must not match on the bare substring 'England', since the region
-  // 'East of England' contains it too — that previously caused the East of England
-  // regional total to be silently replaced with the national figure.
-  const isNational = selectedLabel === 'All England' || selectedLabel.includes('National');
+  const { isEngland = false, region } = scope;
   const nationalRaw = (officialDataJson.national as any)?.[termKey];
 
   let totalCME = 0;
-  let totalPupils = 0;
   let longTermMissingCount = 0;
   let weeks1To8 = 0;
   let weeks8To12 = 0;
@@ -380,7 +377,6 @@ export function calculateAggregate(
 
     const cmeVal = data.totalCME === 'c' ? 0 : data.totalCME;
     totalCME += cmeVal;
-    totalPupils += data.compulsoryPupils;
 
     const w1_8 = data.durationWeeks.weeks1To8 === 'c' ? 0 : data.durationWeeks.weeks1To8;
     const w8_12 = data.durationWeeks.weeks8To12 === 'c' ? 0 : data.durationWeeks.weeks8To12;
@@ -396,12 +392,28 @@ export function calculateAggregate(
     ageCohortsSum.unknownAge += data.ageCohorts.unknownAge;
   }
 
-  // If National and published figure is available, use exact published national figure
-  if (isNational && nationalRaw && nationalRaw.total > 0) {
+  // Keep reading the published National row for the national total rather than
+  // summing authorities: DfE uprate national figures for non-response and do
+  // not uprate LA figures, so a sum of authorities will not reconcile with the
+  // published total, and that gap is not a rounding artefact.
+  if (isEngland && nationalRaw && nationalRaw.total > 0) {
     totalCME = nationalRaw.total;
   }
 
-  const ratePer1000 = totalPupils > 0 ? Number(((totalCME / totalPupils) * 1000).toFixed(2)) : 0;
+  // DfE's own published rate per 100 pupils for this exact selection, read
+  // verbatim — never computed. Denominator: ONS mid-year population estimates,
+  // ages 5–16. Only National, a single Region, or a single Local Authority
+  // carry a published rate; an arbitrary group of authorities has none, and
+  // none is derived here to fill the gap.
+  let ratePer100Published: string | undefined;
+  if (isEngland) {
+    ratePer100Published = nationalRaw?.ratePer100;
+  } else if (region) {
+    ratePer100Published = (officialDataJson.regions as any)?.[region]?.[termKey]?.ratePer100;
+  } else if (authorities.length === 1) {
+    ratePer100Published = authorities[0].termsData[term]?.ratePer100Published;
+  }
+
   const longTermMissingPercent = totalCME > 0 ? Number(((weeks12Plus / totalCME) * 100).toFixed(1)) : 0;
 
   // Previous term for trend delta
@@ -410,7 +422,7 @@ export function calculateAggregate(
 
   let totalCMEDeltaPercent: number | undefined;
   if (prevTerm) {
-    const prevAggregate = calculateAggregate(authorities, prevTerm, selectedLabel);
+    const prevAggregate = calculateAggregate(authorities, prevTerm, selectedLabel, scope);
     if (prevAggregate.totalCME > 0) {
       totalCMEDeltaPercent = Number((((totalCME - prevAggregate.totalCME) / prevAggregate.totalCME) * 100).toFixed(1));
     }
@@ -420,8 +432,7 @@ export function calculateAggregate(
     term,
     selectedLabel,
     totalCME,
-    totalPupils,
-    ratePer1000,
+    ratePer100Published,
     longTermMissingCount: weeks12Plus,
     longTermMissingPercent,
     durationWeeks: {
@@ -439,6 +450,20 @@ export function calculateAggregate(
 export function formatUKNumber(val: number | 'c' | null | undefined): string {
   if (val === 'c' || val === undefined || val === null) return 'c* (<5)';
   return val.toLocaleString('en-GB');
+}
+
+// Label for every "rate per 100 pupils" figure on the dashboard. There is
+// exactly one rate anywhere in this app, and this is it — no second rate is
+// ever computed from it.
+export const RATE_PER_100_LABEL =
+  "DfE's published rate per 100 pupils. Denominator: ONS mid-year population estimates, ages 5–16.";
+
+/** Formats a verbatim published rate_per_100 string ('0.4000000' or 'x'). */
+export function formatRatePer100(raw: string | number | null | undefined): string {
+  if (raw === undefined || raw === null || raw === 'x') return 'Not published';
+  const n = Number(raw);
+  if (Number.isNaN(n)) return 'Not published';
+  return `${n.toFixed(2)} per 100`;
 }
 
 export function formatGBP(val: number, compact: boolean = false): string {

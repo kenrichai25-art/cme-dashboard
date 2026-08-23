@@ -51,7 +51,9 @@ import {
   formatUKCurrency,
   getPublishedBreakdown,
   SCOPE_TIER_COLORS,
-  TOTAL_AUTHORITIES_COUNT
+  TOTAL_AUTHORITIES_COUNT,
+  formatRatePer100,
+  RATE_PER_100_LABEL
 } from '../data/cmeData';
 import { scopeCohort, SCOPE_TIERS } from '../data/cmeScope';
 import { EstimateMarker } from './stratos/EstimateMarker';
@@ -91,7 +93,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
   // 1. National Longitudinal Trajectory across terms
   const chronologicalTerms = [...ACADEMIC_TERMS].reverse();
   const trajectoryData = chronologicalTerms.map((term) => {
-    const agg = calculateAggregate(LOCAL_AUTHORITIES_DATA, term, 'England National');
+    const agg = calculateAggregate(LOCAL_AUTHORITIES_DATA, term, 'England National', { isEngland: true });
     const shortTerm = term
       .replace('2024/25 Autumn', 'Aut 24')
       .replace('2024/25 Spring', 'Spr 25')
@@ -105,21 +107,21 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
       weeks12Plus: agg.durationWeeks.weeks12Plus,
       weeks8To12: agg.durationWeeks.weeks8To12,
       weeks1To8: agg.durationWeeks.weeks1To8,
-      ratePer1000: agg.ratePer1000,
+      ratePer100Published: agg.ratePer100Published,
     };
   });
 
   // 2. Regional Rollup Data for Executive Comparison
   const regionalSummary = ALL_REGIONS.map((reg) => {
     const regLAs = LOCAL_AUTHORITIES_DATA.filter((la) => la.region === reg);
-    const agg = calculateAggregate(regLAs, filters.selectedTerm, reg);
+    const agg = calculateAggregate(regLAs, filters.selectedTerm, reg, { region: reg });
     const target8Plus = agg.durationWeeks.weeks8To12 + agg.durationWeeks.weeks12Plus;
     const estRecovery = Math.round(target8Plus * effectiveValPerCase);
 
     return {
       region: reg,
       totalCME: agg.totalCME,
-      ratePer1000: agg.ratePer1000,
+      ratePer100Published: agg.ratePer100Published,
       longTermPct: agg.longTermMissingPercent,
       target8Plus,
       estRecovery,
@@ -141,7 +143,6 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
         name: la.name,
         region: la.region,
         totalCME: count,
-        ratePer1000: typeof d?.ratePer1000 === 'number' ? d.ratePer1000 : 0,
         target8Plus: target8p,
         recovery,
       };
@@ -259,8 +260,8 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
             </p>
           </div>
           <div className="mt-4 pt-3 border-t border-neutral-800/80 flex items-center justify-between text-xs text-neutral-400">
-            <span>Rate per 1k pupils:</span>
-            <span className="font-semibold text-white">{nationalStats.ratePer1000.toFixed(2)} / 1,000</span>
+            <span title={RATE_PER_100_LABEL}>Rate per 100 pupils:</span>
+            <span className="font-semibold text-white">{formatRatePer100(nationalStats.ratePer100Published)}</span>
           </div>
         </div>
 
@@ -371,7 +372,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
                             <div className="font-bold text-white">{d.term}</div>
                             <div className="text-neutral-300">Total CME: <strong className="text-white">{formatUKNumber(d.totalCME)}</strong></div>
                             <div className="text-[#FE5729]">12+ Weeks: <strong className="text-[#FE5729]">{formatUKNumber(d.weeks12Plus)}</strong></div>
-                            <div className="text-neutral-400">Rate: <strong className="text-neutral-200">{d.ratePer1000.toFixed(2)}/1k</strong></div>
+                            <div className="text-neutral-400">Rate: <strong className="text-neutral-200">{formatRatePer100(d.ratePer100Published)}</strong></div>
                           </div>
                         );
                       }
@@ -514,7 +515,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
                   <div className="flex items-center space-x-4 sm:space-x-5 shrink-0">
                     <div className="text-right">
                       <span className="font-semibold text-[#1C1C1C] text-sm sm:text-base block">{formatUKNumber(reg.totalCME)}</span>
-                      <span className="text-xs text-neutral-400 block font-normal">{reg.ratePer1000.toFixed(2)}/1k</span>
+                      <span className="text-xs text-neutral-400 block font-normal" title={RATE_PER_100_LABEL}>{formatRatePer100(reg.ratePer100Published)}</span>
                     </div>
                     <div className="text-right min-w-[105px]">
                       <span className="font-semibold text-emerald-700 text-sm sm:text-base block">{formatUKCurrency(reg.estRecovery)}</span>

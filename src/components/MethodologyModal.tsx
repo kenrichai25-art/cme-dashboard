@@ -83,14 +83,14 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ onClose }) =
           <div className="space-y-2.5">
             <h3 className="text-xs font-bold text-[#1C1C1C] flex items-center gap-2 uppercase tracking-wider">
               <FileText className="w-4 h-4 text-[#FE5729]" />
-              3. Rate Calculations &amp; Standardisation Formula
+              3. Rate per 100 Pupils
             </h3>
             <div className="p-4 bg-[#1C1C1C] text-neutral-200 rounded-2xl text-xs border border-neutral-800">
-              <p className="text-[#FE5729] font-bold">// DfE Standard CME Incidence Rate per 1,000 Pupils</p>
-              <p className="mt-1 font-semibold">CME Rate = ( Total CME Cohort / Compulsory School-Age Population ) * 1,000</p>
+              <p className="text-[#FE5729] font-bold">// DfE's own published rate — not computed by this dashboard</p>
+              <p className="mt-1 font-semibold">rate_per_100, as published by DfE for National, Regional and Local Authority rows</p>
             </div>
             <p className="text-[11px] text-neutral-500">
-              The denominator is obtained from the DfE Schools, Pupils and their Characteristics January census publication for compulsory school-age pupils (aged 5 to 15 at the start of the academic year).
+              This dashboard displays DfE's published rate per 100 pupils directly. The denominator is ONS mid-year population estimates for ages 5–16. No second rate is derived from it, and no school-age population figure is estimated or backed into from the rate — DfE do not publish a pupil population figure alongside rate_per_100, only the rate itself. Where a selection covers an arbitrary group of authorities rather than a single published National, Regional, or Local Authority row, no rate is shown, since DfE do not publish one for that grouping.
             </p>
           </div>
 

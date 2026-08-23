@@ -43,7 +43,9 @@ import {
   OFFICIAL_20_REASONS,
   REASON_COLORS,
   formatUKNumber,
-  formatGBP
+  formatGBP,
+  formatRatePer100,
+  RATE_PER_100_LABEL
 } from '../data/cmeData';
 import { scopeCohort, computeYield } from '../data/cmeScope';
 import { 
@@ -249,12 +251,12 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
             </div>
 
             <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80">
-              <span className="text-[11px] font-bold text-neutral-400 uppercase">Rate per 100 pupils</span>
+              <span className="text-[11px] font-bold text-neutral-400 uppercase" title={RATE_PER_100_LABEL}>Rate per 100 pupils</span>
               <p className="text-xl font-extrabold text-[#1C1C1C] mt-1 font-mono">
-                {currentTermData?.ratePer100Published !== 'x' ? `${currentTermData?.ratePer100Published}%` : 'Not Published'}
+                {formatRatePer100(currentTermData?.ratePer100Published)}
               </p>
               <span className="text-[10px] text-neutral-500 mt-0.5 block">
-                Published rate
+                DfE's published rate — not computed
               </span>
             </div>
 

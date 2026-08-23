@@ -83,15 +83,19 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
   // 1. Prepare Trajectory Data across all 4 published terms (2024/25 Autumn through 2025/26 Autumn)
   const chronologicalTerms = [...ACADEMIC_TERMS].reverse();
 
+  const trajectoryIsEngland = !currentLA && filters.selectedRegion === 'All England';
   const trajectoryLAs = currentLA
     ? [currentLA]
-    : filters.selectedRegion === 'All England'
+    : trajectoryIsEngland
     ? LOCAL_AUTHORITIES_DATA
     : LOCAL_AUTHORITIES_DATA.filter((la) => la.region === filters.selectedRegion);
 
   const trajectoryData = chronologicalTerms.map((term) => {
-    const agg = calculateAggregate(trajectoryLAs, term, 'Trajectory Cohort');
-    const natAgg = calculateAggregate(LOCAL_AUTHORITIES_DATA, term, 'National Aggregate');
+    const agg = calculateAggregate(trajectoryLAs, term, 'Trajectory Cohort', {
+      isEngland: trajectoryIsEngland,
+      region: !currentLA && !trajectoryIsEngland ? filters.selectedRegion : undefined,
+    });
+    const natAgg = calculateAggregate(LOCAL_AUTHORITIES_DATA, term, 'National Aggregate', { isEngland: true });
 
     const shortTerm = term
       .replace('2024/25 Autumn', 'Aut 24')
@@ -176,7 +180,7 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
 
   const regionalData = ALL_REGIONS.map((region) => {
     const lasInReg = LOCAL_AUTHORITIES_DATA.filter((la) => la.region === region);
-    const agg = calculateAggregate(lasInReg, termForComparison, region);
+    const agg = calculateAggregate(lasInReg, termForComparison, region, { region });
 
     const target8Plus = agg.durationWeeks.weeks8To12 + agg.durationWeeks.weeks12Plus;
     const yieldVal = Math.round(target8Plus * effectiveValPerCase);

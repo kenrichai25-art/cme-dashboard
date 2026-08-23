@@ -54,7 +54,7 @@ export const ApiExplorerModal: React.FC<ApiExplorerModalProps> = ({
     },
     data: {
       totalCME: currentLA ? currentLA.termsData[selectedTerm]?.totalCME : 28450,
-      ratePer1000Pupils: currentLA ? currentLA.termsData[selectedTerm]?.ratePer1000 : 3.42,
+      ratePer100Pupils: currentLA ? currentLA.termsData[selectedTerm]?.ratePer100Published : '3.42',
       longTermMissingRatio: currentLA ? currentLA.termsData[selectedTerm]?.longTermMissingPercent : 35.8,
     },
   };

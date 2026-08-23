@@ -103,8 +103,6 @@ export function computeSTRATOSLEAs(
   return authorities.map((la) => {
     const termData = la.termsData[selectedTerm] || Object.values(la.termsData)[0];
     const rawTotalCme = parseDfENumber(termData?.totalCME, 0);
-    const compulsoryPupils = termData?.compulsoryPupils || 0;
-    const rawCmeRate = parseDfENumber(termData?.ratePer1000, 0);
     const rawW1_8 = parseDfENumber(termData?.durationWeeks?.weeks1To8, 0);
     const rawW8_12 = parseDfENumber(termData?.durationWeeks?.weeks8To12, 0);
     const rawW12_plus = parseDfENumber(termData?.durationWeeks?.weeks12Plus, 0);
@@ -120,8 +118,6 @@ export function computeSTRATOSLEAs(
     const w1_8 = rawW1_8;
     const w8_12 = rawW8_12;
     const w12_plus = rawW12_plus;
-
-    const cmeRate = compulsoryPupils > 0 ? Number(((totalCme / compulsoryPupils) * 1000).toFixed(2)) : rawCmeRate;
 
     // Yield is scoped to the selected tiers at the selected threshold, using this
     // authority's own published duration profile. ESTIMATE: reason and duration
@@ -174,8 +170,6 @@ export function computeSTRATOSLEAs(
       region: la.region,
       tier: la.tier,
       total_cme: totalCme,
-      compulsory_pupils: compulsoryPupils,
-      cme_rate_per_1000: cmeRate,
       w1_8_count: w1_8,
       w8_12_count: w8_12,
       w12_plus: w12_plus,

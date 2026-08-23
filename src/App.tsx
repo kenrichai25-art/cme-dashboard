@@ -140,18 +140,22 @@ export default function App() {
 
   // Compute current aggregated stats for DfE tab
   const currentStats = useMemo(() => {
+    const isEngland = !currentLA && filters.selectedRegion === 'All England';
     const label = currentLA
       ? currentLA.name
-      : filters.selectedRegion === 'All England'
+      : isEngland
       ? 'England (National)'
       : `${filters.selectedRegion} Region`;
 
-    return calculateAggregate(scopedLAs, filters.selectedTerm, label);
+    return calculateAggregate(scopedLAs, filters.selectedTerm, label, {
+      isEngland,
+      region: !currentLA && !isEngland ? filters.selectedRegion : undefined,
+    });
   }, [scopedLAs, filters.selectedTerm, currentLA, filters.selectedRegion]);
 
   // National benchmark for DfE tab
   const nationalStats = useMemo(() => {
-    return calculateAggregate(LOCAL_AUTHORITIES_DATA, filters.selectedTerm, 'National Benchmark');
+    return calculateAggregate(LOCAL_AUTHORITIES_DATA, filters.selectedTerm, 'National Benchmark', { isEngland: true });
   }, [filters.selectedTerm]);
 
   // Regional benchmark (if a specific region or LA is selected)
@@ -159,7 +163,7 @@ export default function App() {
     const reg = currentLA ? currentLA.region : filters.selectedRegion;
     if (reg === 'All England') return undefined;
     const regLAs = LOCAL_AUTHORITIES_DATA.filter((la) => la.region === reg);
-    return calculateAggregate(regLAs, filters.selectedTerm, `${reg} Region Benchmark`);
+    return calculateAggregate(regLAs, filters.selectedTerm, `${reg} Region Benchmark`, { region: reg });
   }, [currentLA, filters.selectedRegion, filters.selectedTerm]);
 
   // =========================================================
@@ -225,7 +229,7 @@ export default function App() {
       'Region',
       'Authority Tier',
       'Census Term',
-      'Compulsory School-Age Pupils',
+      'DfE Rate per 100 Pupils (ONS mid-year population, ages 5-16)',
       'Total CME Count',
       'Target 8-12 Weeks Count',
       'Target 12+ Weeks (Persistent) Count',
@@ -270,7 +274,7 @@ export default function App() {
         `"${la.region}"`,
         `"${la.tier}"`,
         `"${term}"`,
-        d?.compulsoryPupils || 0,
+        `"${d?.ratePer100Published && d.ratePer100Published !== 'x' ? d.ratePer100Published : 'Not published'}"`,
         d?.totalCME === 'c' ? '"c (<5)"' : totalCME,
         d?.durationWeeks?.weeks8To12 === 'c' ? '"c (<5)"' : w8_12,
         d?.durationWeeks?.weeks12Plus === 'c' ? '"c (<5)"' : w12p,
