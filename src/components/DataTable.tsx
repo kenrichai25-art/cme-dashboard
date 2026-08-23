@@ -23,6 +23,9 @@ import { AcademicTerm, FilterState, LocalAuthority, TableColumnSort, DurationBra
 import {
   formatUKNumber,
   formatUKCurrency,
+  formatRatePer100,
+  parseRatePer100,
+  RATE_PER_100_LABEL,
   DURATION_CONFIG,
   TOTAL_AUTHORITIES_COUNT,
   computeSelectionYield,
@@ -38,6 +41,10 @@ interface DataTableProps {
   onExportCSV: () => void;
   onReset?: () => void;
   calculatorParams?: CalculatorParams;
+  /** DfE's published rate for the current selection (National unless a
+   *  region/LA is selected), verbatim — shown as a comparison marker so a
+   *  reader can see how far above or below average each row sits. */
+  benchmarkRatePer100?: string;
 }
 
 export const DataTable: React.FC<DataTableProps> = ({
@@ -48,14 +55,17 @@ export const DataTable: React.FC<DataTableProps> = ({
   onExportCSV,
   onReset,
   calculatorParams = { recoveryPerCase: 2800, strikeRate: 0.75 } as CalculatorParams,
+  benchmarkRatePer100,
 }) => {
   const [tableSearch, setTableSearch] = useState('');
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [sortConfig, setSortConfig] = useState<TableColumnSort>({
-    field: 'recoveryYield',
+    field: 'ratePer100',
     direction: 'desc',
   });
+
+  const benchmarkRate = parseRatePer100(benchmarkRatePer100);
 
   const handleReset = () => {
     setTableSearch('');
@@ -130,6 +140,11 @@ export const DataTable: React.FC<DataTableProps> = ({
       const yieldA = yieldEntryA?.available ? yieldEntryA.value : -1;
       const yieldB = yieldEntryB?.available ? yieldEntryB.value : -1;
 
+      // Unpublished ('x'/'low') sorts last regardless of direction — never
+      // tied with a genuine 0.0.
+      const rateA = parseRatePer100(dataA?.ratePer100Published) ?? -1;
+      const rateB = parseRatePer100(dataB?.ratePer100Published) ?? -1;
+
       let valA: any = 0;
       let valB: any = 0;
 
@@ -146,6 +161,10 @@ export const DataTable: React.FC<DataTableProps> = ({
           return sortConfig.direction === 'asc'
             ? a.region.localeCompare(b.region)
             : b.region.localeCompare(a.region);
+        case 'ratePer100':
+          valA = rateA;
+          valB = rateB;
+          break;
         case 'totalCME':
           valA = totalCMEA;
           valB = totalCMEB;
@@ -303,6 +322,24 @@ export const DataTable: React.FC<DataTableProps> = ({
               </th>
 
               <th
+                onClick={() => handleSort('ratePer100')}
+                className="py-2.5 px-3 text-right cursor-pointer hover:bg-indigo-100/60 transition-colors whitespace-nowrap bg-indigo-50/70 text-indigo-950 font-bold"
+                title={RATE_PER_100_LABEL}
+              >
+                <div className="flex items-center justify-end space-x-1">
+                  <span className="leading-tight block">
+                    Rate<br />per 100
+                    {benchmarkRate != null && (
+                      <span className="block text-[9px] font-medium text-indigo-500 normal-case">
+                        Nat: {benchmarkRate.toFixed(2)}
+                      </span>
+                    )}
+                  </span>
+                  {getSortIcon('ratePer100')}
+                </div>
+              </th>
+
+              <th
                 onClick={() => handleSort('totalCME')}
                 className="py-2.5 px-3 text-right cursor-pointer hover:bg-neutral-200/60 transition-colors whitespace-nowrap"
               >
@@ -387,7 +424,7 @@ export const DataTable: React.FC<DataTableProps> = ({
           <tbody className="divide-y divide-neutral-100 text-neutral-700">
             {paginatedData.length === 0 ? (
               <tr>
-                <td colSpan={10} className="py-12 text-center text-neutral-400 font-medium">
+                <td colSpan={11} className="py-12 text-center text-neutral-400 font-medium">
                   No Local Authorities match the current search filters.
                 </td>
               </tr>
@@ -410,6 +447,7 @@ export const DataTable: React.FC<DataTableProps> = ({
 
                 const target8Plus = w8_12 + w12p;
                 const rowYield = yieldByLACode.get(la.code);
+                const rowRate = parseRatePer100(d?.ratePer100Published);
 
                 return (
                   <tr
@@ -443,7 +481,28 @@ export const DataTable: React.FC<DataTableProps> = ({
                       </span>
                     </td>
 
-                    {/* 3. Total CME */}
+                    {/* 3. Rate per 100 (DfE published) */}
+                    <td className="py-3 px-3 text-right bg-indigo-50/30">
+                      {rowRate == null ? (
+                        <span className="text-neutral-400 text-xs sm:text-sm">Not published</span>
+                      ) : (
+                        <div className="flex items-center justify-end gap-1.5">
+                          {benchmarkRate != null && (
+                            <span
+                              className={`text-[10px] font-bold ${rowRate > benchmarkRate ? 'text-rose-600' : rowRate < benchmarkRate ? 'text-emerald-600' : 'text-neutral-400'}`}
+                              title={`${rowRate > benchmarkRate ? 'Above' : rowRate < benchmarkRate ? 'Below' : 'At'} the national rate of ${benchmarkRate.toFixed(2)} per 100`}
+                            >
+                              {rowRate > benchmarkRate ? '▲' : rowRate < benchmarkRate ? '▼' : '—'}
+                            </span>
+                          )}
+                          <span className="font-bold text-indigo-950 text-xs sm:text-sm">
+                            {rowRate.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                    </td>
+
+                    {/* 4. Total CME */}
                     <td className="py-3 px-3 text-right">
                       {isSuppressed ? (
                         <span className="text-neutral-400 italic text-xs sm:text-sm" title="Suppressed (<5)">

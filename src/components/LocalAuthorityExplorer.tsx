@@ -32,6 +32,8 @@ interface LocalAuthorityExplorerProps {
   onOpenLADetail: (la: LocalAuthority) => void;
   onExportCSV: () => void;
   calculatorParams: CalculatorParams;
+  /** DfE's published national rate per 100 for the selected term, verbatim. */
+  nationalRatePer100?: string;
 }
 
 type QuickPreset = 'all' | 'top-volume' | 'highest-rate' | 'highest-persistent' | 'highest-recovery';
@@ -44,6 +46,7 @@ export const LocalAuthorityExplorer: React.FC<LocalAuthorityExplorerProps> = ({
   onOpenLADetail,
   onExportCSV,
   calculatorParams,
+  nationalRatePer100,
 }) => {
   const [activePreset, setActivePreset] = useState<QuickPreset>('all');
 
@@ -157,6 +160,7 @@ export const LocalAuthorityExplorer: React.FC<LocalAuthorityExplorerProps> = ({
         onExportCSV={onExportCSV}
         onReset={onResetFilters}
         calculatorParams={calculatorParams}
+        benchmarkRatePer100={nationalRatePer100}
       />
     </div>
   );

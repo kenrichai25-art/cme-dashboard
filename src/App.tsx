@@ -515,6 +515,7 @@ export default function App() {
             onOpenLADetail={(la) => setInspectingLA(la)}
             onExportCSV={handleExportCSV}
             calculatorParams={calculatorParams}
+            nationalRatePer100={nationalStats.ratePer100Published}
           />
         )}
 

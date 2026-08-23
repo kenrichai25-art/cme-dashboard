@@ -104,9 +104,9 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onNavigateTab }) => {
       borderClass: 'border-neutral-200 hover:border-[#FE5729]/50',
       bgClass: 'bg-neutral-100 text-neutral-800',
       oneLiner: `The complete searchable, sortable master league table of all ${TOTAL_AUTHORITIES_COUNT} English Education Authorities.`,
-      purpose: 'The central directory for finding specific councils, sorting by caseload or recovery potential, and downloading official data.',
+      purpose: 'The central directory for finding specific councils, sorting by rate, caseload, or recovery potential, and downloading official data.',
       whatYouSee: [
-        'Every English council ranked by Total CME, 8–12 Weeks, 12+ Weeks, and Modelled Yield.',
+        `Every English council ranked by DfE's published Rate per 100 pupils (the default sort), Total CME, 8–12 Weeks, 12+ Weeks, and Modelled Yield.`,
         'Colour-coded duration columns (Amber for 8–12w, Rose for 12+w, Green for Target Cohort).',
         'Live search bar for typing any council name, region, or ONS code.',
         'An "Inspect" button on every row for opening an in-depth audit window.',

@@ -137,16 +137,17 @@ export interface FilterState {
 }
 
 export interface TableColumnSort {
-  field: 
-    | 'name' 
-    | 'code' 
-    | 'region' 
-    | 'totalCME' 
+  field:
+    | 'name'
+    | 'code'
+    | 'region'
+    | 'ratePer100'
+    | 'totalCME'
     | 'targetCases8Plus'
     | 'recoveryYield'
-    | 'weeks1To8' 
-    | 'weeks8To12' 
-    | 'weeks12Plus' 
+    | 'weeks1To8'
+    | 'weeks8To12'
+    | 'weeks12Plus'
     | 'longTermMissingPercent';
   direction: 'asc' | 'desc';
 }

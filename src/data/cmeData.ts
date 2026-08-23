@@ -583,6 +583,17 @@ export function formatRatePer100(raw: string | number | null | undefined): strin
   return `${n.toFixed(2)} per 100`;
 }
 
+/**
+ * Numeric value of a published rate_per_100, for sorting/comparison only.
+ * Returns null for 'x'/'low'/unpublished — callers must not treat that as 0
+ * (a null rate should sort last, not tie with a genuine 0.0).
+ */
+export function parseRatePer100(raw: string | number | null | undefined): number | null {
+  if (raw === undefined || raw === null || raw === 'x' || raw === 'low') return null;
+  const n = Number(raw);
+  return Number.isNaN(n) ? null : n;
+}
+
 export function formatGBP(val: number, compact: boolean = false): string {
   if (compact) {
     if (val >= 1_000_000) {

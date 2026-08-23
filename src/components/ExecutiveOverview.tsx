@@ -53,6 +53,7 @@ import {
   SCOPE_TIER_COLORS,
   TOTAL_AUTHORITIES_COUNT,
   formatRatePer100,
+  parseRatePer100,
   RATE_PER_100_LABEL,
   termHasReasonData,
   REASON_DATA_UNAVAILABLE_MESSAGE,
@@ -140,7 +141,11 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
     };
   }).sort((a, b) => b.totalCME - a.totalCME);
 
-  // 3. Top High-Volume Local Authorities (Show 10 to match 10 Government Regions height)
+  // 3. Highest-Exposure Local Authorities by DfE's published rate per 100
+  // pupils (Show 10 to match 10 Government Regions height). Ranked by rate,
+  // not caseload — a large authority with an average rate is not "exposed";
+  // see CLAUDE_CODE_BRIEF.md Stage 8.
+  const nationalRate = parseRatePer100(nationalStats.ratePer100Published);
   const topLAs = [...LOCAL_AUTHORITIES_DATA]
     .map((la) => {
       const d = la.termsData[filters.selectedTerm];
@@ -152,6 +157,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
       // target8p * effectiveValPerCase.
       const laYield = computeSelectionYield([la], filters.selectedTerm, calculatorParams);
       const recovery = laYield.available ? laYield.value : null;
+      const rate = parseRatePer100(d?.ratePer100Published);
       return {
         code: la.code,
         name: la.name,
@@ -159,9 +165,10 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
         totalCME: count,
         target8Plus: target8p,
         recovery,
+        rate,
       };
     })
-    .sort((a, b) => b.totalCME - a.totalCME)
+    .sort((a, b) => (b.rate ?? -1) - (a.rate ?? -1))
     .slice(0, 10);
 
   // 4. Compliance scope tiers, from the published reason breakdown.
@@ -587,8 +594,9 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
                 <h3 className="text-base font-bold text-[#1C1C1C]">
                   High-Exposure Authority Spotlight
                 </h3>
-                <p className="text-xs text-neutral-500 mt-0.5">
-                  Top authorities with highest active CME caseloads.
+                <p className="text-xs text-neutral-500 mt-0.5" title={RATE_PER_100_LABEL}>
+                  Ranked by DfE's published rate per 100 pupils
+                  {nationalRate != null && ` (national: ${nationalRate.toFixed(2)})`}.
                 </p>
               </div>
               <span className="px-2.5 py-0.5 rounded-full bg-[#FE5729]/10 text-[#FE5729] text-[10px] font-extrabold uppercase border border-[#FE5729]/20">
@@ -611,13 +619,27 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
                       <h4 className="text-sm sm:text-base font-bold text-[#1C1C1C] group-hover:text-[#FE5729] transition-colors truncate">
                         {la.name}
                       </h4>
-                      <span className="text-xs text-neutral-400 block truncate">{la.region}</span>
+                      <span className="text-xs text-neutral-400 block truncate">{la.region} • {formatUKNumber(la.totalCME)} CME</span>
                     </div>
                   </div>
 
                   <div className="text-right shrink-0">
                     <span className="font-semibold text-[#1C1C1C] text-sm sm:text-base block">
-                      {formatUKNumber(la.totalCME)} CME
+                      {la.rate == null ? (
+                        <span className="text-neutral-400 text-xs">Not published</span>
+                      ) : (
+                        <>
+                          {nationalRate != null && (
+                            <span
+                              className={`mr-1 text-[10px] font-bold ${la.rate > nationalRate ? 'text-rose-600' : la.rate < nationalRate ? 'text-emerald-600' : 'text-neutral-400'}`}
+                              title={`${la.rate > nationalRate ? 'Above' : la.rate < nationalRate ? 'Below' : 'At'} the national rate of ${nationalRate.toFixed(2)} per 100`}
+                            >
+                              {la.rate > nationalRate ? '▲' : la.rate < nationalRate ? '▼' : '—'}
+                            </span>
+                          )}
+                          {la.rate.toFixed(2)} / 100
+                        </>
+                      )}
                     </span>
                     <span className="font-semibold text-emerald-700 text-xs sm:text-sm block">
                       {la.recovery == null ? (
@@ -633,7 +655,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
           </div>
 
           <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-between">
-            <span className="text-xs text-neutral-500">Ranked by total pupils missing education</span>
+            <span className="text-xs text-neutral-500">Rate per 100 pupils, ONS mid-year population denominator</span>
             <button
               onClick={() => onNavigateTab('la-explorer')}
               className="text-xs font-bold text-[#FE5729] hover:text-[#E0461B] flex items-center gap-1 cursor-pointer"
