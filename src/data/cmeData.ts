@@ -429,6 +429,39 @@ export function computeSelectionYield(
   return { available: true, cases, value };
 }
 
+export interface UntraceableCount {
+  /** False when the term has no published reason breakdown. */
+  available: boolean;
+  /** Published count for "Unknown" + "Not recorded" — not an estimate. */
+  count: number;
+  /** Cells carrying 'low' within that count — real children, count unknown. */
+  suppressedCells: number;
+}
+
+/**
+ * Published count of children recorded as "Unknown" or "Not recorded"
+ * (the 'untraceable' scope tier's reasons), for the same selection
+ * getPublishedBreakdown() resolves — the published National/Regional/LA row
+ * read directly wherever one exists, summed across authorities only as a
+ * last resort for an arbitrary subset. This is a real published figure, not
+ * a duration-scoped estimate — no assumption about how many are abroad is
+ * made here. Feeds the Stage 10 "potential upside" panel only; must never
+ * be summed into a KPI card, the league table, the yield figure, or an
+ * export.
+ */
+export function computeUntraceableCount(
+  term: AcademicTerm,
+  opts: { la?: LocalAuthority | null; region?: Region; authorities?: LocalAuthority[] } = {}
+): UntraceableCount {
+  if (!termHasReasonData(term)) {
+    return { available: false, count: 0, suppressedCells: 0 };
+  }
+  const breakdown = getPublishedBreakdown(term, opts);
+  const cohort = scopeCohort(breakdown.reasons, breakdown.durations, breakdown.totalRaw, 8);
+  const tier = cohort.tiers.find((t) => t.tier.id === 'untraceable');
+  return { available: true, count: tier?.publishedCount ?? 0, suppressedCells: tier?.suppressedCells ?? 0 };
+}
+
 export interface AggregateScope {
   /** True only for the whole-England selection. Not inferred from selectedLabel text. */
   isEngland?: boolean;

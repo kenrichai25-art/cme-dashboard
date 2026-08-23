@@ -53,6 +53,7 @@ import { ExecutiveOverview } from './components/ExecutiveOverview';
 import { LocalAuthorityExplorer } from './components/LocalAuthorityExplorer';
 import { FilterBar } from './components/FilterBar';
 import { KPICards } from './components/KPICards';
+import { PotentialUpsidePanel } from './components/PotentialUpsidePanel';
 import { VisualisationSuite } from './components/VisualisationSuite';
 import { DataTable } from './components/DataTable';
 import { LADetailModal } from './components/LADetailModal';
@@ -464,6 +465,16 @@ export default function App() {
               durationFilter={filters.durationFilter}
               calculatorParams={calculatorParams}
               authorities={scopedLAs}
+            />
+
+            {/* Potential Upside Panel — display-only, never feeds the KPI
+                cards, league table, yield figure, or exports (Stage 10) */}
+            <PotentialUpsidePanel
+              term={filters.selectedTerm}
+              currentLA={currentLA}
+              region={filters.selectedRegion}
+              recoveryPerCase={calculatorParams.recoveryPerCase}
+              strikeRate={calculatorParams.strikeRate}
             />
 
             {/* Visualisations Suite (Recharts) */}
