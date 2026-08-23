@@ -14,9 +14,30 @@ const DFE_CSV_URL = `https://api.education.gov.uk/statistics/v1/data-sets/${DFE_
 const DFE_META_URL = `https://api.education.gov.uk/statistics/v1/data-sets/${DFE_DATASET_ID}/meta`;
 
 const DATA_FILE_PATH = path.join(__dirname, "src", "data", "officialDfeData.json");
+const PROVENANCE_FILE_PATH = path.join(__dirname, "src", "data", "dfe-provenance.json");
 
 // In-memory cached dataset
 let officialDataCache: any = null;
+
+/**
+ * scripts/refresh-dfe-data.mjs writes this file after a validated live pull
+ * from the DfE API — dataset id/title/version, DfE's own publication date,
+ * and this app's retrieval timestamp, all discovered from the API response
+ * rather than hardcoded. Read fresh on every status request (not cached at
+ * boot) so the file can appear or change while the dev server is running,
+ * without a restart. Returns null when it doesn't exist yet — every caller
+ * must fall back to officialDataCache's own embedded metadata in that case.
+ */
+function loadProvenance(): any | null {
+  try {
+    if (fs.existsSync(PROVENANCE_FILE_PATH)) {
+      return JSON.parse(fs.readFileSync(PROVENANCE_FILE_PATH, "utf-8"));
+    }
+  } catch (err: any) {
+    console.error("[DfE Server] Failed to read dfe-provenance.json:", err.message);
+  }
+  return null;
+}
 
 // Term ids the dashboard actually displays. Must match ACADEMIC_TERMS in
 // src/data/cmeData.ts — duration breakdowns are only published from 2024/25.
@@ -249,19 +270,26 @@ async function startServer() {
   // Health / Status
   app.get("/api/dfe/status", async (req, res) => {
     try {
+      const provenance = loadProvenance();
       res.json({
         status: "connected",
-        apiEndpoint: "https://api.education.gov.uk/statistics/v1",
-        datasetId: DFE_DATASET_ID,
-        title: "Children missing education at census date",
+        apiEndpoint: provenance?.endpoint || "https://api.education.gov.uk/statistics/v1",
+        datasetId: provenance?.dataSetId || DFE_DATASET_ID,
+        title: provenance?.dataSetTitle || "Children missing education at census date",
         totalRecords: officialDataCache?.metadata?.totalRecords ?? null,
         termsCount: ACTIVE_TERM_IDS.length,
         latestTerm: "2025/26 Autumn",
         // Retrieval timestamp: when this server last fetched fresh data from
         // the DfE API. Publication date: when DfE itself published that data.
         // Neither is "now" — both come from the cached dataset on disk.
-        lastSynced: officialDataCache?.metadata?.syncedAt || null,
-        lastPublished: officialDataCache?.metadata?.lastPublished || null,
+        // Prefer dfe-provenance.json (written by scripts/refresh-dfe-data.mjs)
+        // when it exists; fall back to officialDfeData.json's own embedded
+        // metadata (written by the in-app sync / generate_official_dataset.js)
+        // when it doesn't.
+        lastSynced: provenance?.retrievedAt || officialDataCache?.metadata?.syncedAt || null,
+        lastPublished: provenance?.dfePublished || officialDataCache?.metadata?.lastPublished || null,
+        datasetVersion: provenance?.dataSetVersion || null,
+        provenanceSource: provenance ? "dfe-provenance.json" : "officialDfeData.json",
         authoritiesCount: countActiveAuthorities(),
       });
     } catch (err: any) {

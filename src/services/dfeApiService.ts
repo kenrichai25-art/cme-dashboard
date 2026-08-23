@@ -23,6 +23,8 @@ export interface DfeApiStatus {
   dfeDataVintagePeriod?: string;
   nextScheduledReleaseDate?: string;
   dataFreshnessStatus?: 'Live & Up to Date' | 'Recent Update' | 'Awaiting DfE Term Return';
+  /** Which file the server actually read this provenance from. */
+  provenanceSource?: 'dfe-provenance.json' | 'officialDfeData.json';
 }
 
 export const DFE_EES_CONFIG = {
@@ -44,6 +46,19 @@ function formatIsoDate(iso: string | null | undefined): string | undefined {
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
+/** Splits an ISO timestamp into the short date/time strings the "Last
+ *  Refreshed" card shows. Returns {} for a missing/unparseable input so
+ *  the caller can fall back to something else rather than show "Invalid Date". */
+function formatIsoDateTime(iso: string | null | undefined): { date?: string; time?: string } {
+  if (!iso) return {};
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return {};
+  return {
+    date: d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+    time: d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+  };
+}
+
 /**
  * Reports the status of this app's own server (the process running
  * server.ts), not a live probe of DfE's API. `connected: true` means this
@@ -62,12 +77,23 @@ export async function testDfeApiConnection(): Promise<DfeApiStatus> {
 
     if (res.ok) {
       const data = await res.json();
+      // Prefer the real version number from dfe-provenance.json when the
+      // server found one; otherwise fall back to the dataset id, which is
+      // always present.
+      const releaseVersion = data.datasetVersion
+        ? `v${data.datasetVersion}${data.totalRecords ? ` (${data.totalRecords.toLocaleString()} records)` : ''}`
+        : data.datasetId
+          ? `${data.datasetId}${data.totalRecords ? ` (${data.totalRecords.toLocaleString()} records)` : ''}`
+          : 'Unknown';
+      // "Last Refreshed" must show when the cached dataset was actually
+      // retrieved, not the moment this status check happened to run —
+      // fall back to that moment only if the server has no retrieval
+      // timestamp at all.
+      const synced = formatIsoDateTime(data.lastSynced);
       return {
         connected: true,
         endpoint: data.apiEndpoint || DFE_EES_CONFIG.baseUrl,
-        releaseVersion: data.datasetId
-          ? `${data.datasetId}${data.totalRecords ? ` (${data.totalRecords.toLocaleString()} records)` : ''}`
-          : 'Unknown',
+        releaseVersion,
         lastUpdated: data.lastSynced?.split('T')[0] || 'Unknown',
         dataSource: 'DfE EES Official Data Store',
         statusCode: res.status,
@@ -76,13 +102,14 @@ export async function testDfeApiConnection(): Promise<DfeApiStatus> {
         // genuinely 0, and it must show as 0, not the reassuring full count.
         totalLAsSynchronised: data.authoritiesCount ?? 0,
         englandCoveragePercent: Math.round(((data.authoritiesCount ?? 0) / TOTAL_AUTHORITIES_COUNT) * 100),
-        lastSyncTimestamp: timeStr,
-        lastSyncDate: dateStr,
+        lastSyncTimestamp: synced.time || timeStr,
+        lastSyncDate: synced.date || dateStr,
         dfePublicationReleaseDate: formatIsoDate(data.lastPublished) || DFE_EES_CONFIG.latestDfEReleaseDate,
         dfeDataVintagePeriod: DFE_EES_CONFIG.latestCensusPeriod,
         nextScheduledReleaseDate: DFE_EES_CONFIG.nextReleaseDate,
         // Descriptive only — not computed from any actual staleness check.
         dataFreshnessStatus: 'Recent Update',
+        provenanceSource: data.provenanceSource === 'dfe-provenance.json' ? 'dfe-provenance.json' : 'officialDfeData.json',
       };
     }
     return {

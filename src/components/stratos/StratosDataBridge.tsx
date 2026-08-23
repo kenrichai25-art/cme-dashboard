@@ -119,6 +119,9 @@ export const StratosDataBridge: React.FC<StratosDataBridgeProps> = ({
                 </>
               )}
             </div>
+            <div className="text-[9px] text-neutral-500 font-medium mt-1" title="Which file on the server this provenance was read from">
+              Source: {apiStatus?.provenanceSource || 'officialDfeData.json'}
+            </div>
           </div>
 
           {/* Card 2: Latest DfE Publication Date */}
