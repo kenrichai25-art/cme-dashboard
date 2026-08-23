@@ -254,11 +254,14 @@ async function startServer() {
         apiEndpoint: "https://api.education.gov.uk/statistics/v1",
         datasetId: DFE_DATASET_ID,
         title: "Children missing education at census date",
-        totalRecords: officialDataCache?.metadata?.totalRecords || 73710,
+        totalRecords: officialDataCache?.metadata?.totalRecords ?? null,
         termsCount: ACTIVE_TERM_IDS.length,
         latestTerm: "2025/26 Autumn",
-        isLive: true,
-        lastSynced: officialDataCache?.metadata?.syncedAt || new Date().toISOString(),
+        // Retrieval timestamp: when this server last fetched fresh data from
+        // the DfE API. Publication date: when DfE itself published that data.
+        // Neither is "now" — both come from the cached dataset on disk.
+        lastSynced: officialDataCache?.metadata?.syncedAt || null,
+        lastPublished: officialDataCache?.metadata?.lastPublished || null,
         authoritiesCount: countActiveAuthorities(),
       });
     } catch (err: any) {

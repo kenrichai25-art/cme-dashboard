@@ -150,7 +150,7 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onNavigateTab }) => {
       oneLiner: `Categorises all ${TOTAL_AUTHORITIES_COUNT} councils into 4 risk tiers (Critical, High, Medium, Low) for prioritized casework.`,
       purpose: 'Helps compliance teams immediately identify which councils require urgent intervention and support.',
       whatYouSee: [
-        '4 Tier Cards: Critical (500+ cases), High (250–499 cases), Medium (100–249 cases), Low (<100 cases).',
+        '4 Tier Cards: Critical (in-scope cohort ≥200 or rate ≥1.2/100), High (≥80 or ≥0.6/100), Medium (≥30 or ≥0.4/100), Low (below all thresholds).',
         'Total financial exposure mapped out for each risk tier.',
         'Card grid displaying all local authorities assigned to the selected tier.',
       ],
@@ -189,16 +189,16 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onNavigateTab }) => {
       accentColor: 'text-sky-600',
       borderClass: 'border-sky-200 hover:border-sky-500',
       bgClass: 'bg-sky-100 text-sky-800',
-      oneLiner: 'Technical connectivity showing live sync status with the DfE Open Data API and REST endpoints.',
+      oneLiner: 'Dataset provenance and a live, on-demand pull from the DfE Explore Education Statistics API.',
       purpose: 'For IT professionals and developers integrating this data into external council systems, PowerBI, or databases.',
       whatYouSee: [
-        `Live synchronization status across all ${TOTAL_AUTHORITIES_COUNT} authorities.`,
-        'REST API endpoints with copyable code snippets (cURL, Python, JavaScript).',
-        'Interactive JSON data tester to view raw DfE census responses.',
+        'Retrieval timestamp and DfE publication date for the currently cached dataset.',
+        'REST API endpoint details and a ready-to-run cURL snippet.',
+        'A button to re-fetch the dataset from DfE on the server (updates the server cache, not this page — the app needs rebuilding to display newly fetched figures).',
       ],
       howToUse: [
-        `Click "Synchronise ${TOTAL_AUTHORITIES_COUNT} LAs" to refresh local datasets against DfE census returns.`,
-        'Copy API sample endpoints to integrate into external dashboards or analytics pipelines.',
+        `Click "Refresh Live DfE Data" to re-fetch the census CSV from DfE and update the server's cached copy.`,
+        'Copy the cURL snippet to query the same DfE endpoint directly from your own tooling.',
       ],
     },
   ];

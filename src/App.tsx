@@ -109,6 +109,17 @@ export default function App() {
 
   // Pull all data for England handler
   const handlePullAllEnglandData = async () => {
+    // Overwriting the cached dataset on disk is not reversible from here, and
+    // nothing in this app diffs the new data against what every figure in
+    // this dashboard was last verified against. A future rebuild will pick
+    // up whatever DfE currently publishes with no automatic re-check.
+    const confirmed = window.confirm(
+      'This will re-fetch the dataset from DfE and overwrite the server\'s cached copy. ' +
+      'It will not change what you see now, but the next time this app is rebuilt, every ' +
+      'benchmark figure will need to be re-verified against the new data before it can be trusted. Continue?'
+    );
+    if (!confirmed) return;
+
     setIsPullingData(true);
     try {
       const result = await pullAllEnglandData((progress) => {
@@ -120,7 +131,11 @@ export default function App() {
         selectedRegion: 'All England',
         selectedLACode: null,
       }));
-      showToast(`Synchronised all ${TOTAL_AUTHORITIES_COUNT} English Local Authorities from DfE EES API (100% Coverage)`);
+      showToast(
+        result.synced
+          ? 'Server cache refreshed from the live DfE dataset. Rebuild the app to load these figures into the dashboard.'
+          : 'Could not reach the DfE API. The dashboard is still showing its existing cached dataset.'
+      );
     } catch (err) {
       showToast('Error syncing with DfE EES API. Using verified local census cache.');
     } finally {

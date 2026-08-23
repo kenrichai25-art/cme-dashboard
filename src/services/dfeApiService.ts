@@ -37,8 +37,18 @@ export const DFE_EES_CONFIG = {
   nextReleaseDate: 'October 2026',
 };
 
+function formatIsoDate(iso: string | null | undefined): string | undefined {
+  if (!iso) return undefined;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
 /**
- * Fetch real status from backend API proxy
+ * Reports the status of this app's own server (the process running
+ * server.ts), not a live probe of DfE's API. `connected: true` means this
+ * server responded, not that a DfE sync has happened recently — that only
+ * happens when someone actually triggers pullAllEnglandData().
  */
 export async function testDfeApiConnection(): Promise<DfeApiStatus> {
   const startTime = performance.now();
@@ -55,42 +65,47 @@ export async function testDfeApiConnection(): Promise<DfeApiStatus> {
       return {
         connected: true,
         endpoint: data.apiEndpoint || DFE_EES_CONFIG.baseUrl,
-        releaseVersion: `Dataset v1.0.1 (${data.totalRecords?.toLocaleString()} records)`,
-        lastUpdated: data.lastSynced?.split('T')[0] || new Date().toISOString().split('T')[0],
+        releaseVersion: data.datasetId
+          ? `${data.datasetId}${data.totalRecords ? ` (${data.totalRecords.toLocaleString()} records)` : ''}`
+          : 'Unknown',
+        lastUpdated: data.lastSynced?.split('T')[0] || 'Unknown',
         dataSource: 'DfE EES Official Data Store',
-        statusCode: 200,
-        latencyMs: Math.max(12, latency),
-        totalLAsSynchronised: data.authoritiesCount || TOTAL_AUTHORITIES_COUNT,
-        englandCoveragePercent: 100,
+        statusCode: res.status,
+        latencyMs: latency,
+        // No fallback here: if the server's cache failed to load, this is
+        // genuinely 0, and it must show as 0, not the reassuring full count.
+        totalLAsSynchronised: data.authoritiesCount ?? 0,
+        englandCoveragePercent: Math.round(((data.authoritiesCount ?? 0) / TOTAL_AUTHORITIES_COUNT) * 100),
         lastSyncTimestamp: timeStr,
         lastSyncDate: dateStr,
-        dfePublicationReleaseDate: DFE_EES_CONFIG.latestDfEReleaseDate,
+        dfePublicationReleaseDate: formatIsoDate(data.lastPublished) || DFE_EES_CONFIG.latestDfEReleaseDate,
         dfeDataVintagePeriod: DFE_EES_CONFIG.latestCensusPeriod,
         nextScheduledReleaseDate: DFE_EES_CONFIG.nextReleaseDate,
-        dataFreshnessStatus: 'Live & Up to Date',
+        // Descriptive only — not computed from any actual staleness check.
+        dataFreshnessStatus: 'Recent Update',
       };
     }
+    return {
+      connected: false,
+      endpoint: DFE_EES_CONFIG.baseUrl,
+      releaseVersion: 'Unavailable',
+      lastUpdated: 'Unknown',
+      dataSource: 'Local Representative Cache',
+      statusCode: res.status,
+      latencyMs: latency,
+    };
   } catch (err) {
-    console.warn('[DfE Client] Server proxy status check failed, using direct client metadata:', err);
+    console.warn('[DfE Client] Server status check failed:', err);
+    return {
+      connected: false,
+      endpoint: DFE_EES_CONFIG.baseUrl,
+      releaseVersion: 'Unavailable',
+      lastUpdated: 'Unknown',
+      dataSource: 'Local Representative Cache',
+      statusCode: 0,
+      latencyMs: Math.round(performance.now() - startTime),
+    };
   }
-
-  return {
-    connected: true,
-    endpoint: `${DFE_EES_CONFIG.baseUrl}/data-sets/${DFE_EES_CONFIG.datasetId}`,
-    releaseVersion: 'Dataset v1.0.1 (73,710 records)',
-    lastUpdated: new Date().toISOString().split('T')[0],
-    dataSource: 'DfE EES Official Data Store',
-    statusCode: 200,
-    latencyMs: 24,
-    totalLAsSynchronised: TOTAL_AUTHORITIES_COUNT,
-    englandCoveragePercent: 100,
-    lastSyncTimestamp: timeStr,
-    lastSyncDate: dateStr,
-    dfePublicationReleaseDate: DFE_EES_CONFIG.latestDfEReleaseDate,
-    dfeDataVintagePeriod: DFE_EES_CONFIG.latestCensusPeriod,
-    nextScheduledReleaseDate: DFE_EES_CONFIG.nextReleaseDate,
-    dataFreshnessStatus: 'Live & Up to Date',
-  };
 }
 
 export interface PullProgress {
@@ -102,13 +117,17 @@ export interface PullProgress {
 }
 
 /**
- * Trigger genuine DfE EES synchronisation via backend server
+ * Ask the server to re-fetch the DfE census CSV and rewrite its cached
+ * dataset file. This is a genuine network call to api.education.gov.uk, not
+ * simulated. But the dashboard's figures are built from that cached file at
+ * app build time (see cmeData.ts's static import) — a successful fetch here
+ * updates the file on the server, not what's currently rendered in this
+ * browser tab. That only happens after the app is rebuilt and reloaded, so
+ * progress messaging must not claim the dashboard itself has just updated.
  */
 export async function pullAllEnglandData(
   onProgress?: (progress: PullProgress) => void
-): Promise<{ data: LocalAuthority[]; status: DfeApiStatus }> {
-  const startTime = performance.now();
-
+): Promise<{ data: LocalAuthority[]; status: DfeApiStatus; synced: boolean }> {
   onProgress?.({
     stage: 'initiating',
     percentage: 20,
@@ -117,12 +136,13 @@ export async function pullAllEnglandData(
     totalCount: TOTAL_AUTHORITIES_COUNT,
   });
 
+  let synced = false;
   try {
     const syncRes = await fetch('/api/dfe/sync', { method: 'POST' });
     onProgress?.({
       stage: 'fetching_regions',
       percentage: 60,
-      message: `Ingesting published census tables across all ${TOTAL_AUTHORITIES_COUNT} Local Authorities...`,
+      message: `Requesting published census tables across all ${TOTAL_AUTHORITIES_COUNT} Local Authorities...`,
       loadedCount: 95,
       totalCount: TOTAL_AUTHORITIES_COUNT,
     });
@@ -130,33 +150,38 @@ export async function pullAllEnglandData(
     if (syncRes.ok) {
       const syncResult = await syncRes.json();
       console.log('[DfE Sync Result]', syncResult);
+      synced = true;
+    } else {
+      const errBody = await syncRes.json().catch(() => null);
+      console.warn('[DfE Client] Sync request failed:', errBody?.error || syncRes.statusText);
     }
   } catch (e) {
-    console.warn('[DfE Client] Live sync request completed with local store fallback');
+    console.warn('[DfE Client] Sync request failed:', e);
   }
 
-  onProgress?.({
-    stage: 'aggregating_authorities',
-    percentage: 85,
-    message: 'Validating official statutory returns against DfE national totals (34,700 benchmark)...',
-    loadedCount: TOTAL_AUTHORITIES_COUNT,
-    totalCount: TOTAL_AUTHORITIES_COUNT,
-  });
-
-  await new Promise((r) => setTimeout(r, 150));
-
-  onProgress?.({
-    stage: 'complete',
-    percentage: 100,
-    message: 'Synchronisation verified against official DfE dataset (019bb854-d8d5-707a-bc53-e0de9ac70891).',
-    loadedCount: TOTAL_AUTHORITIES_COUNT,
-    totalCount: TOTAL_AUTHORITIES_COUNT,
-  });
+  onProgress?.(
+    synced
+      ? {
+          stage: 'complete',
+          percentage: 100,
+          message: 'Server cache updated from the live DfE dataset. Rebuild the app to load these figures into the dashboard.',
+          loadedCount: TOTAL_AUTHORITIES_COUNT,
+          totalCount: TOTAL_AUTHORITIES_COUNT,
+        }
+      : {
+          stage: 'complete',
+          percentage: 100,
+          message: 'Could not reach the DfE API — the dashboard is still showing its existing cached dataset.',
+          loadedCount: 0,
+          totalCount: TOTAL_AUTHORITIES_COUNT,
+        }
+  );
 
   const status = await testDfeApiConnection();
   return {
     data: LOCAL_AUTHORITIES_DATA,
     status,
+    synced,
   };
 }
 

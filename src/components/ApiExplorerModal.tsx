@@ -38,10 +38,14 @@ export const ApiExplorerModal: React.FC<ApiExplorerModalProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Illustrative response shape built from this session's own cached data —
+  // not a captured live response. Values shown are whatever is currently
+  // loaded for the selected LA/term; fields DfE hasn't published for that
+  // selection are shown as undefined rather than invented.
   const sampleJsonResponse = {
-    releaseId: 'cme-2024-25-spring',
+    datasetId: DFE_EES_CONFIG.datasetId,
     status: 'Approved Official Statistics',
-    publishedDate: '2025-06-20T09:30:00Z',
+    publishedDate: apiStatus?.dfePublicationReleaseDate,
     geographicLevel: currentLA ? 'LocalAuthority' : 'National',
     query: {
       laCode: currentLA?.code || 'E92000001 (England)',
@@ -49,13 +53,15 @@ export const ApiExplorerModal: React.FC<ApiExplorerModalProps> = ({
     },
     meta: {
       source: 'DfE Explore Education Statistics API v1',
-      disclosureControl: 'Suppression applied (<5 represented as "c")',
+      // DfE's three published cell markers — see cmeScope.ts. None of these
+      // is statistical disclosure control; none is imputed as zero.
+      cellMarkers: { low: 'rounds to 0 but is not 0', x: 'not available', z: 'not applicable' },
       licence: 'Open Government Licence v3.0 (OGL)',
     },
     data: {
-      totalCME: currentLA ? currentLA.termsData[selectedTerm]?.totalCME : 28450,
-      ratePer100Pupils: currentLA ? currentLA.termsData[selectedTerm]?.ratePer100Published : '3.42',
-      longTermMissingRatio: currentLA ? currentLA.termsData[selectedTerm]?.longTermMissingPercent : 35.8,
+      totalCME: currentLA?.termsData[selectedTerm]?.totalCME,
+      ratePer100Pupils: currentLA?.termsData[selectedTerm]?.ratePer100Published,
+      longTermMissingRatio: currentLA?.termsData[selectedTerm]?.longTermMissingPercent,
     },
   };
 
@@ -77,7 +83,7 @@ export const ApiExplorerModal: React.FC<ApiExplorerModalProps> = ({
                   DfE Explore Education Statistics (EES) API
                 </h2>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
-                  v1.4 REST
+                  REST
                 </span>
               </div>
               <p className="text-xs text-neutral-400 mt-0.5">
@@ -97,14 +103,18 @@ export const ApiExplorerModal: React.FC<ApiExplorerModalProps> = ({
         {/* Status Bar */}
         <div className="bg-[#141414] px-6 py-2.5 border-b border-neutral-800 flex items-center justify-between text-xs text-neutral-300">
           <div className="flex items-center space-x-2.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Connection: <strong>Online</strong></span>
-            <span className="text-neutral-600">•</span>
-            <span className="text-neutral-400">Latency: {apiStatus?.latencyMs || 28}ms</span>
+            <span className={`w-2 h-2 rounded-full ${apiStatus?.connected === false ? 'bg-neutral-500' : 'bg-emerald-400 animate-pulse'}`} />
+            <span>Server: <strong>{apiStatus?.connected === false ? 'Unreachable' : 'Connected'}</strong></span>
+            {apiStatus?.latencyMs != null && (
+              <>
+                <span className="text-neutral-600">•</span>
+                <span className="text-neutral-400">Latency: {apiStatus.latencyMs}ms</span>
+              </>
+            )}
           </div>
 
           <div className="text-[11px] text-neutral-400">
-            /data-sets/cme-census
+            /data-sets/{DFE_EES_CONFIG.datasetId}
           </div>
         </div>
 
@@ -166,10 +176,7 @@ export const ApiExplorerModal: React.FC<ApiExplorerModalProps> = ({
           {activeTab === 'response' && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-[#1C1C1C]">Live JSON response representation:</span>
-                <span className="text-[11px] bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full border border-emerald-200 font-bold">
-                  HTTP 200 OK
-                </span>
+                <span className="font-bold text-[#1C1C1C]">Example response shape (illustrative, not a captured live response):</span>
               </div>
 
               <div className="bg-[#1C1C1C] text-emerald-400 p-4 rounded-2xl text-xs overflow-x-auto border border-neutral-800 max-h-72">
@@ -190,7 +197,6 @@ export const ApiExplorerModal: React.FC<ApiExplorerModalProps> = ({
               <div className="p-4 bg-[#F4F4F6] border border-neutral-200 rounded-2xl space-y-1.5 text-[11px]">
                 <p><strong>Base URL:</strong> <code className="text-[#FE5729]">https://api.education.gov.uk/statistics/v1</code></p>
                 <p><strong>Licensing:</strong> Open Government Licence v3.0 (free for commercial and non-commercial reuse).</p>
-                <p><strong>Rate Limit:</strong> 120 requests per minute per IP address.</p>
               </div>
             </div>
           )}

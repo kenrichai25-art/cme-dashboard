@@ -1,23 +1,12 @@
-import React, { useState } from 'react';
-import { 
-  Database, 
-  RefreshCw, 
-  FileSpreadsheet, 
-  UploadCloud, 
-  CheckCircle2, 
-  AlertCircle, 
-  ExternalLink, 
-  Code2, 
+import React from 'react';
+import {
+  RefreshCw,
+  ExternalLink,
+  Code2,
   Download,
-  Link as LinkIcon,
-  ShieldCheck,
   Clock,
   Calendar,
-  Sparkles,
   Server,
-  ArrowUpRight,
-  Info,
-  Radio,
   FileCheck2,
   CalendarCheck
 } from 'lucide-react';
@@ -39,23 +28,13 @@ export const StratosDataBridge: React.FC<StratosDataBridgeProps> = ({
   leas,
   academicYear,
 }) => {
-  const [googleSheetsUrl, setGoogleSheetsUrl] = useState('');
-  const [importStatus, setImportStatus] = useState<string | null>(null);
-
-  // Derived timestamp values with graceful defaults
-  const lastSyncTime = apiStatus?.lastSyncTimestamp || 'Just now';
-  const lastSyncDate = apiStatus?.lastSyncDate || new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  // Derived timestamp values. "Last Refreshed" is when the server last fetched
+  // and cached the dataset — not when this page loaded.
+  const lastSyncTime = apiStatus?.lastSyncTimestamp || 'Unknown';
+  const lastSyncDate = apiStatus?.lastSyncDate || 'Unknown';
   const dfeReleaseDate = apiStatus?.dfePublicationReleaseDate || DFE_EES_CONFIG.latestDfEReleaseDate;
   const dfeVintage = apiStatus?.dfeDataVintagePeriod || DFE_EES_CONFIG.latestCensusPeriod;
   const nextScheduled = apiStatus?.nextScheduledReleaseDate || DFE_EES_CONFIG.nextReleaseDate;
-
-  const handleSimulateGoogleSheetImport = () => {
-    if (!googleSheetsUrl.trim()) {
-      setImportStatus('Please enter a valid Google Sheets URL or public publish link.');
-      return;
-    }
-    setImportStatus(`Connecting to Google Sheets v4 API... Synced ${DFE_EES_CONFIG.totalEnglandLAs} LEA records successfully.`);
-  };
 
   const handleExportJSON = () => {
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(leas, null, 2));
@@ -78,9 +57,13 @@ export const StratosDataBridge: React.FC<StratosDataBridgeProps> = ({
           {/* Header & Status Indicator */}
           <div className="space-y-1.5">
             <div className="flex items-center space-x-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Live Feed Synchronised
+              <span className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-extrabold border ${
+                apiStatus?.connected === false
+                  ? 'bg-neutral-700/30 text-neutral-300 border-neutral-600/40'
+                  : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${apiStatus?.connected === false ? 'bg-neutral-400' : 'bg-emerald-400 animate-pulse'}`} />
+                {apiStatus?.connected === false ? 'Server Unreachable' : 'Server Connected'}
               </span>
               <span className="text-xs text-neutral-400 font-medium">
                 • DfE Explore Education Statistics (EES)
@@ -90,12 +73,12 @@ export const StratosDataBridge: React.FC<StratosDataBridgeProps> = ({
               Data Freshness & Census Release Registry
             </h2>
             <p className="text-xs text-neutral-400 max-w-2xl leading-relaxed">
-              Direct API integration with the UK Government official Children Missing Education (CME) statutory dataset.
+              This server can fetch the published Children Missing Education dataset from the DfE API on demand. The dashboard itself is built from the last fetch saved to disk.
             </p>
           </div>
 
           {/* Action Button */}
-          <div className="flex items-center space-x-2 shrink-0">
+          <div className="flex flex-col items-end space-y-1.5 shrink-0">
             <button
               id="bridge-pull-live-btn"
               onClick={onPullEnglandData}
@@ -109,6 +92,9 @@ export const StratosDataBridge: React.FC<StratosDataBridgeProps> = ({
               <RefreshCw className={`w-3.5 h-3.5 ${isPullingData ? 'animate-spin' : ''}`} />
               <span>{isPullingData ? `Synchronising ${DFE_EES_CONFIG.totalEnglandLAs} LEAs...` : 'Refresh Live DfE Data'}</span>
             </button>
+            <span className="text-[10px] text-neutral-500 max-w-[220px] text-right leading-tight">
+              Overwrites the server's cached dataset — every benchmark figure needs re-verifying after the next rebuild.
+            </span>
           </div>
         </div>
 
@@ -126,8 +112,12 @@ export const StratosDataBridge: React.FC<StratosDataBridgeProps> = ({
             </div>
             <div className="text-[10px] text-emerald-300 font-medium mt-0.5 flex items-center gap-1">
               <span>{lastSyncDate}</span>
-              <span className="text-neutral-600">•</span>
-              <span className="text-neutral-400">Latency: {apiStatus?.latencyMs || 28}ms</span>
+              {apiStatus?.latencyMs != null && (
+                <>
+                  <span className="text-neutral-600">•</span>
+                  <span className="text-neutral-400">Latency: {apiStatus.latencyMs}ms</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -222,65 +212,17 @@ export const StratosDataBridge: React.FC<StratosDataBridgeProps> = ({
           </div>
 
           <div className="p-4 rounded-2xl bg-[#F4F4F6] border border-neutral-200/70">
-            <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">Release Version & Schema</div>
-            <div className="text-xs font-extrabold text-[#1C1C1C] mt-1">
-              {apiStatus?.releaseVersion || 'v1.4.2 (2025.2)'}
+            <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">Dataset ID</div>
+            <div className="text-xs font-extrabold text-[#1C1C1C] mt-1 truncate" title={apiStatus?.releaseVersion || DFE_EES_CONFIG.datasetId}>
+              {apiStatus?.releaseVersion || DFE_EES_CONFIG.datasetId}
             </div>
-            <div className="text-[10px] text-neutral-400 mt-0.5">Complies with ONS Code of Practice</div>
+            <div className="text-[10px] text-neutral-400 mt-0.5">Official Statistics — ONS Code of Practice</div>
           </div>
         </div>
       </div>
 
-      {/* 3. Two Column Grid: Google Sheets & Raw Export */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        {/* Google Sheets / External URL */}
-        <div className="bg-white rounded-3xl border border-neutral-200/80 shadow-sm p-6 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center space-x-3 mb-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-700 flex items-center justify-center">
-                <FileSpreadsheet className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-[#1C1C1C]">Google Sheets Connection</h3>
-                <p className="text-xs text-neutral-500">Link your custom workbook to override local defaults</p>
-              </div>
-            </div>
-
-            <div className="space-y-3 mt-4 text-xs">
-              <div>
-                <label className="font-bold text-[#1C1C1C] block mb-1">
-                  Google Sheet URL / CSV Publish Link:
-                </label>
-                <input
-                  type="text"
-                  value={googleSheetsUrl}
-                  onChange={(e) => setGoogleSheetsUrl(e.target.value)}
-                  placeholder="https://docs.google.com/spreadsheets/d/..."
-                  className="w-full px-4 py-2 bg-[#F4F4F6] border border-neutral-200 rounded-full text-xs focus:outline-none focus:ring-2 focus:ring-[#FE5729]/20 focus:border-[#FE5729]"
-                />
-              </div>
-
-              {importStatus && (
-                <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-800 text-xs border border-emerald-200 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-                  <span>{importStatus}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="pt-4 mt-5 border-t border-neutral-100 flex items-center justify-between">
-            <span className="text-[11px] text-neutral-400">Supports .csv and Google Sheets v4</span>
-            <button
-              onClick={handleSimulateGoogleSheetImport}
-              className="px-4 py-1.5 text-xs font-bold text-white bg-[#1C1C1C] hover:bg-neutral-800 rounded-full transition-colors cursor-pointer"
-            >
-              Sync Sheet
-            </button>
-          </div>
-        </div>
-
+      {/* 3. Raw Export */}
+      <div className="grid grid-cols-1 gap-6">
         {/* Dataset Export & API Endpoints */}
         <div className="bg-white rounded-3xl border border-neutral-200/80 shadow-sm p-6 flex flex-col justify-between">
           <div>

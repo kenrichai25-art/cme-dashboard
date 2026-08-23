@@ -63,9 +63,9 @@ export const Header: React.FC<HeaderProps> = ({
 
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className={`w-2 h-2 rounded-full ${apiStatus?.connected === false ? 'bg-neutral-500' : 'bg-emerald-400 animate-pulse'}`} />
               <span className="text-[11px] text-neutral-300 font-medium">
-                {apiStatus?.totalLAsSynchronised ? `${apiStatus.totalLAsSynchronised} / ${TOTAL_AUTHORITIES_COUNT} LAs Synchronised (100% England)` : `${TOTAL_AUTHORITIES_COUNT} / ${TOTAL_AUTHORITIES_COUNT} English LAs Active`}
+                {TOTAL_AUTHORITIES_COUNT} / {TOTAL_AUTHORITIES_COUNT} English LAs Active
               </span>
             </div>
             <div className="hidden md:flex items-center space-x-1 text-neutral-400">
