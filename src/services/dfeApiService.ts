@@ -212,7 +212,12 @@ export async function pullAllEnglandData(
   };
 }
 
-export function buildDfeApiSnippet(laCode?: string, term?: string): string {
+/**
+ * Always the same full-dataset CSV pull — the DfE EES /csv endpoint this app
+ * actually calls (see server.ts's DFE_CSV_URL) takes no LA/term filter, so
+ * there is nothing here to scope to a current selection.
+ */
+export function buildDfeApiSnippet(): string {
   const datasetId = DFE_EES_CONFIG.datasetId;
   return `curl -X GET "https://api.education.gov.uk/statistics/v1/data-sets/${datasetId}/csv" \\
   -H "Accept: text/csv" \\

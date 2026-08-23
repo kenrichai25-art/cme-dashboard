@@ -217,7 +217,7 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onNavigateTab }) => {
     {
       question: 'How is the "Modelled Yield" or "Financial Impact" calculated?',
       answer:
-        'The formula multiplies the number of actionable cases (pupils missing 8+ weeks) by the Average Recovery per Case (£2,800 standard) and the Strike Rate (75% standard). For example, 100 actionable cases × £2,800 × 75% = £210,000 in projected recoverable public funds.',
+        'The formula multiplies actionable cases by the Average Recovery per Case (£2,800 default) and the Strike Rate (75% default). "Actionable cases" is not simply every pupil missing 8+ weeks — it\'s the subset in an in-scope reason tier (by default, only "Believed to have moved to another country") whose duration meets the active threshold. Because DfE publish reason and duration as separate breakdowns and never cross-tabulate them, that duration-within-a-reason-tier split is an estimate, not a published figure — every such figure is marked "Est" wherever it appears. For example, 100 in-scope cases × £2,800 × 75% = £210,000 in projected recoverable public funds.',
     },
     {
       question: 'Where does the data come from?',

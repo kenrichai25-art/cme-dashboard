@@ -724,7 +724,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
             Statutory Compliance & Legal Guide
           </h4>
           <p className="text-xs text-neutral-500 mt-1">
-            Review Children Act 1996 s.436A, DfE guidance, and data sharing legal bases.
+            Review Education Act 1996 s.436A, DfE guidance, and data sharing legal bases.
           </p>
         </div>
 

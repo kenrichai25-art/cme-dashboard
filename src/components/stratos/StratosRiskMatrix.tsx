@@ -114,8 +114,9 @@ export const StratosRiskMatrix: React.FC<StratosRiskMatrixProps> = ({
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-rose-900 uppercase tracking-wider">
+            <span className="text-xs font-extrabold text-rose-900 uppercase tracking-wider flex items-center gap-1.5">
               Critical Priority
+              <EstimateMarker />
             </span>
             <span className="px-2.5 py-0.5 bg-rose-100 text-rose-800 rounded-full font-extrabold text-xs">
               {criticalLEAs.length} LEAs
@@ -139,8 +140,9 @@ export const StratosRiskMatrix: React.FC<StratosRiskMatrixProps> = ({
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-amber-900 uppercase tracking-wider">
+            <span className="text-xs font-extrabold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
               High Priority
+              <EstimateMarker />
             </span>
             <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 rounded-full font-extrabold text-xs">
               {highLEAs.length} LEAs
@@ -164,8 +166,9 @@ export const StratosRiskMatrix: React.FC<StratosRiskMatrixProps> = ({
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-sky-900 uppercase tracking-wider">
+            <span className="text-xs font-extrabold text-sky-900 uppercase tracking-wider flex items-center gap-1.5">
               Medium Priority
+              <EstimateMarker />
             </span>
             <span className="px-2.5 py-0.5 bg-sky-100 text-sky-800 rounded-full font-extrabold text-xs">
               {mediumLEAs.length} LEAs
@@ -189,8 +192,9 @@ export const StratosRiskMatrix: React.FC<StratosRiskMatrixProps> = ({
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-emerald-900 uppercase tracking-wider">
+            <span className="text-xs font-extrabold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
               Low Priority
+              <EstimateMarker />
             </span>
             <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-extrabold text-xs">
               {lowLEAs.length} LEAs

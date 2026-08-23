@@ -1,15 +1,17 @@
 import React from 'react';
-import { 
-  X, 
-  ShieldCheck, 
-  HelpCircle, 
-  FileText, 
-  Scale, 
-  AlertCircle, 
+import {
+  X,
+  ShieldCheck,
+  HelpCircle,
+  FileText,
+  Scale,
+  AlertCircle,
   CheckCircle,
   ExternalLink,
-  BookOpen
+  BookOpen,
+  Target
 } from 'lucide-react';
+import { SCOPE_TIERS, ESTIMATE_METHOD, THRESHOLD_NOTES } from '../data/cmeScope';
 
 interface MethodologyModalProps {
   onClose: () => void;
@@ -115,6 +117,53 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ onClose }) =
               <div className="p-3 bg-[#F4F4F6] border border-neutral-200/80 rounded-2xl">
                 <span className="font-bold text-[#1C1C1C] block">Summer Census</span>
                 <span className="text-neutral-500 text-[10px]">Submitted in July</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Compliance Scope Tiers & Estimated Figures */}
+          <div className="space-y-2.5">
+            <h3 className="text-xs font-bold text-[#1C1C1C] flex items-center gap-2 uppercase tracking-wider">
+              <Target className="w-4 h-4 text-[#FE5729]" />
+              5. Compliance Scope Tiers &amp; Estimated Figures
+            </h3>
+            <p>
+              Not every DfE reason category is relevant to Child Benefit compliance. This dashboard groups the 20 published reason categories into four tiers, based on relevance to the question of whether a child is plausibly no longer in the UK:
+            </p>
+            <div className="space-y-2">
+              {SCOPE_TIERS.map((tier) => (
+                <div key={tier.id} className="p-3 bg-[#F4F4F6] border border-neutral-200/80 rounded-2xl text-[11px] text-neutral-600">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-[#1C1C1C]">{tier.label}</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${tier.countsTowardYield ? 'bg-emerald-100 text-emerald-800' : 'bg-neutral-200 text-neutral-600'}`}>
+                      {tier.countsTowardYield ? 'Counts toward yield' : 'Not in scope'}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-neutral-500">{tier.reasons.join(', ')}</p>
+                  <p className="mt-1">{tier.rationale}</p>
+                </div>
+              ))}
+            </div>
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-[11px] text-amber-900">
+              <strong className="block text-amber-900 mb-1">Why some figures are marked "Est"</strong>
+              {ESTIMATE_METHOD}
+            </div>
+          </div>
+
+          {/* Duration Threshold */}
+          <div className="space-y-2.5">
+            <h3 className="text-xs font-bold text-[#1C1C1C] flex items-center gap-2 uppercase tracking-wider">
+              <AlertCircle className="w-4 h-4 text-amber-600" />
+              6. The 8-Week vs. 12-Week Threshold
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[11px] text-neutral-600">
+              <div className="p-3 bg-[#F4F4F6] border border-neutral-200/80 rounded-2xl">
+                <span className="font-bold text-[#1C1C1C] block mb-1">8 weeks (default)</span>
+                {THRESHOLD_NOTES[8]}
+              </div>
+              <div className="p-3 bg-[#F4F4F6] border border-neutral-200/80 rounded-2xl">
+                <span className="font-bold text-[#1C1C1C] block mb-1">12 weeks</span>
+                {THRESHOLD_NOTES[12]}
               </div>
             </div>
           </div>

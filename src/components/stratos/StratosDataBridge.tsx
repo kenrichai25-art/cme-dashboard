@@ -58,12 +58,18 @@ export const StratosDataBridge: React.FC<StratosDataBridgeProps> = ({
           <div className="space-y-1.5">
             <div className="flex items-center space-x-2">
               <span className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-extrabold border ${
-                apiStatus?.connected === false
+                apiStatus === null || apiStatus.connected === false
                   ? 'bg-neutral-700/30 text-neutral-300 border-neutral-600/40'
                   : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
               }`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${apiStatus?.connected === false ? 'bg-neutral-400' : 'bg-emerald-400 animate-pulse'}`} />
-                {apiStatus?.connected === false ? 'Server Unreachable' : 'Server Connected'}
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  apiStatus === null
+                    ? 'bg-neutral-400 animate-pulse'
+                    : apiStatus.connected === false
+                    ? 'bg-neutral-400'
+                    : 'bg-emerald-400 animate-pulse'
+                }`} />
+                {apiStatus === null ? 'Checking Server…' : apiStatus.connected === false ? 'Server Unreachable' : 'Server Connected'}
               </span>
               <span className="text-xs text-neutral-400 font-medium">
                 • DfE Explore Education Statistics (EES)
@@ -207,9 +213,11 @@ export const StratosDataBridge: React.FC<StratosDataBridgeProps> = ({
           </div>
 
           <div className="p-4 rounded-2xl bg-[#F4F4F6] border border-neutral-200/70">
-            <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">Authorities In Scope</div>
+            <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">Authorities In Scope (Last Sync)</div>
             <div className="text-xs font-extrabold text-[#1C1C1C] mt-1">
-              {DFE_EES_CONFIG.totalEnglandLAs} / {DFE_EES_CONFIG.totalEnglandLAs} English LEAs (100% Coverage)
+              {apiStatus?.totalLAsSynchronised != null
+                ? `${apiStatus.totalLAsSynchronised} / ${DFE_EES_CONFIG.totalEnglandLAs} English LEAs (${apiStatus.englandCoveragePercent ?? '—'}% Coverage)`
+                : `— / ${DFE_EES_CONFIG.totalEnglandLAs} English LEAs (awaiting server status)`}
             </div>
             <div className="text-[10px] text-neutral-400 mt-0.5">All 10 Government Office Regions</div>
           </div>

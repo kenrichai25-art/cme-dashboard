@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { LEACombined, StratosRegionalRollup, StratosNationalAggregate, RiskLevel } from '../../types';
 import { formatGBP } from '../../utils/stratosCalculations';
+import { EstimateMarker } from './EstimateMarker';
 
 interface StratosChartsSectionProps {
   leas: LEACombined[];
@@ -145,6 +146,13 @@ export const StratosChartsSection: React.FC<StratosChartsSectionProps> = ({
   const severe12PlusPctInTier = activeTierConfig.cases > 0 ? Math.round((activeTierConfig.w12_plus / activeTierConfig.cases) * 100) : 0;
   const tierShareOfNationalPotential = Math.round((activeTierConfig.value / (nationalAggregate.total_projected_potential || 1)) * 100);
 
+  // Critical + High share of national potential, computed live rather than
+  // hardcoded, so it can't go stale against the term/threshold/tier controls.
+  const criticalHighValue = riskDistributionData[0].value + riskDistributionData[1].value;
+  const criticalHighSharePct = nationalAggregate.total_projected_potential > 0
+    ? (criticalHighValue / nationalAggregate.total_projected_potential) * 100
+    : 0;
+
   // Custom high-contrast tooltips for superior legibility
   const TopLEATooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -257,8 +265,9 @@ export const StratosChartsSection: React.FC<StratosChartsSectionProps> = ({
             <BarChart3 className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-extrabold text-[#1C1C1C] font-display">
+            <h3 className="text-sm font-extrabold text-[#1C1C1C] font-display flex items-center gap-1.5">
               Financial Recovery Distribution & Risk Analytics
+              <EstimateMarker />
             </h3>
             <p className="text-xs text-neutral-500 mt-0.5">
               Regional aggregations, duration splits (8–12w vs 12+w), and risk tier concentration
@@ -314,7 +323,7 @@ export const StratosChartsSection: React.FC<StratosChartsSectionProps> = ({
         {activeChartTab === 'regional' && (
           <div>
             <div className="flex items-center justify-between mb-3 text-xs text-neutral-500">
-              <span>Projected potential by Government Office Region (£ Value)</span>
+              <span className="flex items-center gap-1.5">Projected potential by Government Office Region (£ Value) <EstimateMarker /></span>
               <div className="flex items-center space-x-4">
                 <span className="flex items-center gap-1.5 font-bold text-neutral-700">
                   <span className="w-3 h-3 bg-rose-600 rounded-xs inline-block" /> 12+ Weeks Pool (Statutory Breach)
@@ -354,7 +363,7 @@ export const StratosChartsSection: React.FC<StratosChartsSectionProps> = ({
         {activeChartTab === 'top-leas' && (
           <div>
             <div className="flex items-center justify-between mb-3 text-xs text-neutral-500">
-              <span>Top 10 English Local Authorities by total Child Benefit recovery potential</span>
+              <span className="flex items-center gap-1.5">Top 10 English Local Authorities by total Child Benefit recovery potential <EstimateMarker /></span>
               <span className="text-[11px] text-neutral-400">Click any authority for case breakdown</span>
             </div>
             <div className="h-80 w-full">
@@ -408,11 +417,12 @@ export const StratosChartsSection: React.FC<StratosChartsSectionProps> = ({
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-xs font-extrabold text-[#1C1C1C]">
+                  <div className="text-xs font-extrabold text-[#1C1C1C] flex items-center gap-1.5">
                     Pareto Risk Concentration Insight
+                    <EstimateMarker />
                   </div>
                   <div className="text-xs text-neutral-700 mt-0.5">
-                    <strong className="font-bold text-[#FE5729]">80.1% ({formatGBP(riskDistributionData[0].value + riskDistributionData[1].value)})</strong> of England's total recovery potential is concentrated in <strong className="font-bold text-[#1C1C1C]">{riskDistributionData[0].count + riskDistributionData[1].count} Critical & High Priority Authorities</strong>.
+                    <strong className="font-bold text-[#FE5729]">{criticalHighSharePct.toFixed(1)}% ({formatGBP(criticalHighValue)})</strong> of England's total recovery potential is concentrated in <strong className="font-bold text-[#1C1C1C]">{riskDistributionData[0].count + riskDistributionData[1].count} Critical & High Priority Authorities</strong>.
                   </div>
                 </div>
               </div>
@@ -539,8 +549,9 @@ export const StratosChartsSection: React.FC<StratosChartsSectionProps> = ({
                 <div className="flex items-center space-x-2.5">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: activeTierConfig.color }} />
                   <div>
-                    <h4 className="text-xs font-bold text-[#1C1C1C]">
+                    <h4 className="text-xs font-bold text-[#1C1C1C] flex items-center gap-1.5">
                       {selectedRiskTier} Priority Tier Deep-Dive ({activeTierConfig.count} Local Authorities)
+                      <EstimateMarker />
                     </h4>
                     <p className="text-[11px] text-neutral-500">{activeTierConfig.description}</p>
                   </div>

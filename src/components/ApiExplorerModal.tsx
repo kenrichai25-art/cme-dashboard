@@ -30,7 +30,7 @@ export const ApiExplorerModal: React.FC<ApiExplorerModalProps> = ({
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'curl' | 'response' | 'docs'>('curl');
 
-  const snippet = buildDfeApiSnippet(currentLA?.code, selectedTerm);
+  const snippet = buildDfeApiSnippet();
 
   const handleCopy = () => {
     navigator.clipboard.writeText(snippet);
@@ -103,8 +103,14 @@ export const ApiExplorerModal: React.FC<ApiExplorerModalProps> = ({
         {/* Status Bar */}
         <div className="bg-[#141414] px-6 py-2.5 border-b border-neutral-800 flex items-center justify-between text-xs text-neutral-300">
           <div className="flex items-center space-x-2.5">
-            <span className={`w-2 h-2 rounded-full ${apiStatus?.connected === false ? 'bg-neutral-500' : 'bg-emerald-400 animate-pulse'}`} />
-            <span>Server: <strong>{apiStatus?.connected === false ? 'Unreachable' : 'Connected'}</strong></span>
+            <span className={`w-2 h-2 rounded-full ${
+              apiStatus === null
+                ? 'bg-neutral-400 animate-pulse'
+                : apiStatus.connected === false
+                ? 'bg-neutral-500'
+                : 'bg-emerald-400 animate-pulse'
+            }`} />
+            <span>Server: <strong>{apiStatus === null ? 'Checking…' : apiStatus.connected === false ? 'Unreachable' : 'Connected'}</strong></span>
             {apiStatus?.latencyMs != null && (
               <>
                 <span className="text-neutral-600">•</span>
@@ -152,7 +158,7 @@ export const ApiExplorerModal: React.FC<ApiExplorerModalProps> = ({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-[#1C1C1C]">
-                  Ready-to-use cURL query for current filters ({currentLA?.name || 'All England'}, {selectedTerm}):
+                  Ready-to-use cURL query — the full dataset (this endpoint has no LA/term filter; use the response to find {currentLA?.name || 'All England'}, {selectedTerm} yourself):
                 </span>
                 <button
                   onClick={handleCopy}

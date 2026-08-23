@@ -212,33 +212,37 @@ export const StratosComplianceGuide: React.FC = () => {
       category: 'clawback',
       number: '04',
       title: 'Recovery Calculation Formulas & Limitation Periods',
-      subtitle: 'Exact statutory weekly rates, retrospective lookback horizons, and Limitation Act 1980 provisions',
+      subtitle: 'The recovery model\'s per-case formula, retrospective lookback horizons, and Limitation Act 1980 provisions',
       primaryAct: 'Limitation Act 1980 (Section 9 & 32) • Social Security (Overpayments and Recovery) Regs 2013',
       content: (
         <div className="space-y-4 text-xs text-slate-700 leading-relaxed">
           <p>
-            The CME Financial Impact model computes recoverable sums based on statutory weekly Child Benefit disbursement rates established by HM Treasury:
+            The CME Financial Impact model does not price cases against statutory weekly Child Benefit disbursement rates. It applies a flat, adjustable average recovery value per case, multiplied by an assumed case-confirmation ("strike") rate: <strong>cases × recovery per case × strike rate</strong>.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="p-3 bg-white rounded-lg border border-slate-200 text-center">
-              <span className="text-[10px] text-slate-500 font-semibold uppercase">Eldest / Only Child</span>
-              <div className="text-base font-bold text-slate-900 mt-1">£25.60 / wk</div>
-              <div className="text-[11px] text-indigo-600 font-semibold mt-0.5">£1,331.20 per annum</div>
+              <span className="text-[10px] text-slate-500 font-semibold uppercase">Recovery / Case</span>
+              <div className="text-base font-bold text-slate-900 mt-1">£2,800 (default)</div>
+              <div className="text-[11px] text-indigo-600 font-semibold mt-0.5">Adjustable £1,000–£6,000</div>
             </div>
 
             <div className="p-3 bg-white rounded-lg border border-slate-200 text-center">
-              <span className="text-[10px] text-slate-500 font-semibold uppercase">Subsequent Children</span>
-              <div className="text-base font-bold text-slate-900 mt-1">£16.95 / wk</div>
-              <div className="text-[11px] text-indigo-600 font-semibold mt-0.5">£881.40 per annum</div>
+              <span className="text-[10px] text-slate-500 font-semibold uppercase">Strike Rate</span>
+              <div className="text-base font-bold text-slate-900 mt-1">75% (default)</div>
+              <div className="text-[11px] text-indigo-600 font-semibold mt-0.5">An assumption, until measured per authority</div>
             </div>
 
             <div className="p-3 bg-white rounded-lg border border-slate-200 text-center">
-              <span className="text-[10px] text-slate-500 font-semibold uppercase">Blended Model Base</span>
-              <div className="text-base font-bold text-slate-900 mt-1">£21.00 / wk</div>
-              <div className="text-[11px] text-indigo-600 font-semibold mt-0.5">Weighted avg per CME pupil</div>
+              <span className="text-[10px] text-slate-500 font-semibold uppercase">Effective Value / Case</span>
+              <div className="text-base font-bold text-slate-900 mt-1">£2,100 (default)</div>
+              <div className="text-[11px] text-indigo-600 font-semibold mt-0.5">Recovery × Strike Rate</div>
             </div>
           </div>
+
+          <p className="text-slate-600">
+            A "case" here is a child in an in-scope reason tier (see the Compliance Scope Tiers panel) whose recorded absence duration meets the active 8- or 12-week threshold. Because DfE publish reason and duration as separate breakdowns and do not cross-tabulate them, the split of a reason tier's count by duration is an estimate, not a published figure — see the Methodology panel for the exact method. Every figure built this way is marked "Est" wherever it appears.
+          </p>
 
           <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
             <h5 className="font-bold text-slate-900 text-xs">

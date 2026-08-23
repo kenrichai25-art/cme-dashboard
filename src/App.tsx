@@ -684,7 +684,7 @@ export default function App() {
               onClick={() => setIsApiExplorerOpen(true)}
               className="px-3.5 py-1.5 rounded-full bg-neutral-800 hover:bg-neutral-700 text-neutral-200 transition-colors cursor-pointer font-medium"
             >
-              DfE EES API v1.4
+              DfE EES API
             </button>
             <button
               onClick={handleExportCSV}

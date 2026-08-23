@@ -435,7 +435,7 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
                       {formatGBP(totalYieldValue)}
                     </p>
                     <p className="text-xs text-neutral-400 mt-1">
-                      Based on {formatUKNumber(targetCases)} persistent CME cases (8+ weeks) @ {formatGBP(recoveryPerCase)} / case ({Math.round(strikeRate * 100)}% strike rate)
+                      Based on {formatUKNumber(targetCases)} persistent CME cases ({durationThreshold}+ weeks) @ {formatGBP(recoveryPerCase)} / case ({Math.round(strikeRate * 100)}% strike rate)
                     </p>
                   </div>
                   <div className="flex items-center space-x-2">

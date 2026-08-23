@@ -32,6 +32,7 @@ import {
   SelectionYield,
   REASON_DATA_UNAVAILABLE_MESSAGE
 } from '../data/cmeData';
+import { EstimateMarker } from './stratos/EstimateMarker';
 
 interface DataTableProps {
   localAuthorities: LocalAuthority[];
@@ -397,6 +398,7 @@ export const DataTable: React.FC<DataTableProps> = ({
               >
                 <div className="flex items-center justify-end space-x-1">
                   <span className="leading-tight block">Modelled<br />Yield (£)</span>
+                  <EstimateMarker />
                   {getSortIcon('recoveryYield')}
                 </div>
               </th>
