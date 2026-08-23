@@ -47,7 +47,8 @@ import {
   formatRatePer100,
   RATE_PER_100_LABEL,
   termHasReasonData,
-  REASON_DATA_UNAVAILABLE_MESSAGE
+  REASON_DATA_UNAVAILABLE_MESSAGE,
+  computeSelectionYield
 } from '../data/cmeData';
 import { scopeCohort, computeYield } from '../data/cmeScope';
 import { ReasonDataUnavailable } from './ReasonDataUnavailable';
@@ -90,7 +91,6 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
   const strikeRate = calculatorParams.strikeRate;
   const includeTiers = calculatorParams.includeTiers ?? ['abroad'];
   const durationThreshold = calculatorParams.durationThreshold ?? 8;
-  const effectiveValuePerCase = recoveryPerCase * strikeRate;
 
   const rawTotalCme = parseDfENumber(currentTermData?.totalCME, 0);
   const rawW8_12 = parseDfENumber(currentTermData?.durationWeeks?.weeks8To12, 0);
@@ -134,12 +134,15 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
   }
   const riskConfig = RISK_TIER_CONFIG[riskLevel];
 
-  // 4-term longitudinal series for this LA
+  // 4-term longitudinal series for this LA. Yield per term via
+  // scopeCohort()/computeYield() (Stage 4 method), not
+  // (termW8_12 + termW12Plus) * effectiveValuePerCase — null for a term with
+  // no published reason breakdown (Reason is published for Autumn 2025/26
+  // only), so the line has a genuine gap rather than a fabricated £0.
   const laTrendData = chronologicalTerms.map((t) => {
     const d = la.termsData[t];
-    const termW8_12 = parseDfENumber(d?.durationWeeks?.weeks8To12, 0);
-    const termW12Plus = parseDfENumber(d?.durationWeeks?.weeks12Plus, 0);
-    const termYield = Math.round((termW8_12 + termW12Plus) * effectiveValuePerCase);
+    const termYieldResult = computeSelectionYield([la], t, calculatorParams);
+    const termYield = termYieldResult.available ? termYieldResult.value : null;
 
     return {
       term: t,

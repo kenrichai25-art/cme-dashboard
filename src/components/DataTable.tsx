@@ -20,7 +20,15 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { AcademicTerm, FilterState, LocalAuthority, TableColumnSort, DurationBracket, CalculatorParams } from '../types';
-import { formatUKNumber, formatUKCurrency, DURATION_CONFIG, TOTAL_AUTHORITIES_COUNT } from '../data/cmeData';
+import {
+  formatUKNumber,
+  formatUKCurrency,
+  DURATION_CONFIG,
+  TOTAL_AUTHORITIES_COUNT,
+  computeSelectionYield,
+  SelectionYield,
+  REASON_DATA_UNAVAILABLE_MESSAGE
+} from '../data/cmeData';
 
 interface DataTableProps {
   localAuthorities: LocalAuthority[];
@@ -39,7 +47,7 @@ export const DataTable: React.FC<DataTableProps> = ({
   onOpenLADetail,
   onExportCSV,
   onReset,
-  calculatorParams = { recoveryPerCase: 2800, strikeRate: 0.75 },
+  calculatorParams = { recoveryPerCase: 2800, strikeRate: 0.75 } as CalculatorParams,
 }) => {
   const [tableSearch, setTableSearch] = useState('');
   const [pageSize, setPageSize] = useState<number>(10);
@@ -59,7 +67,19 @@ export const DataTable: React.FC<DataTableProps> = ({
 
   const term = filters.selectedTerm;
   const durationFilter = filters.durationFilter;
-  const effectiveValPerCase = calculatorParams.recoveryPerCase * calculatorParams.strikeRate;
+
+  // Scoped yield per authority (Stage 4 method via cmeScope.ts), computed once
+  // for the whole list rather than per sort comparison. Replaces
+  // target8Plus * effectiveValPerCase, which priced every reason regardless
+  // of scope tier. available:false when the term has no published reason
+  // breakdown (Reason is published for Autumn 2025/26 only).
+  const yieldByLACode = useMemo(() => {
+    const map = new Map<string, SelectionYield>();
+    localAuthorities.forEach((la) => {
+      map.set(la.code, computeSelectionYield([la], term, calculatorParams));
+    });
+    return map;
+  }, [localAuthorities, term, calculatorParams]);
 
   // Filter list by region and table-level search
   const filteredData = useMemo(() => {
@@ -105,8 +125,10 @@ export const DataTable: React.FC<DataTableProps> = ({
       const target8PlusA = w8_12A + w12pA;
       const target8PlusB = w8_12B + w12pB;
 
-      const yieldA = Math.round(target8PlusA * effectiveValPerCase);
-      const yieldB = Math.round(target8PlusB * effectiveValPerCase);
+      const yieldEntryA = yieldByLACode.get(a.code);
+      const yieldEntryB = yieldByLACode.get(b.code);
+      const yieldA = yieldEntryA?.available ? yieldEntryA.value : -1;
+      const yieldB = yieldEntryB?.available ? yieldEntryB.value : -1;
 
       let valA: any = 0;
       let valB: any = 0;
@@ -157,7 +179,7 @@ export const DataTable: React.FC<DataTableProps> = ({
       if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [filteredData, term, sortConfig, effectiveValPerCase]);
+  }, [filteredData, term, sortConfig, yieldByLACode]);
 
   // Pagination calculations
   const totalItems = sortedData.length;
@@ -387,7 +409,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                 const w1_8 = Math.round(rawW1_8 * factor);
 
                 const target8Plus = w8_12 + w12p;
-                const yieldVal = Math.round(target8Plus * effectiveValPerCase);
+                const rowYield = yieldByLACode.get(la.code);
 
                 return (
                   <tr
@@ -451,7 +473,13 @@ export const DataTable: React.FC<DataTableProps> = ({
 
                     {/* 7. Modelled Recovery Yield (£) - ONLY THIS IN BOLD */}
                     <td className="py-3 px-3 text-right font-bold text-emerald-700 bg-emerald-50/40 text-xs sm:text-sm">
-                      {formatUKCurrency(yieldVal)}
+                      {rowYield?.available ? (
+                        formatUKCurrency(rowYield.value)
+                      ) : (
+                        <span className="font-medium text-neutral-400 text-[11px]" title={REASON_DATA_UNAVAILABLE_MESSAGE}>
+                          Not published
+                        </span>
+                      )}
                     </td>
 
                     {/* 8. 1-8 Weeks Duration */}

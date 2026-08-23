@@ -10,7 +10,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { AggregatedStats, LocalAuthority, DurationBracket, CalculatorParams } from '../types';
-import { formatUKNumber, formatUKCurrency, DURATION_CONFIG } from '../data/cmeData';
+import { formatUKNumber, formatUKCurrency, DURATION_CONFIG, computeSelectionYield, REASON_DATA_UNAVAILABLE_MESSAGE } from '../data/cmeData';
 
 interface KPICardsProps {
   stats: AggregatedStats;
@@ -20,6 +20,8 @@ interface KPICardsProps {
   showBenchmark: boolean;
   durationFilter?: DurationBracket;
   calculatorParams?: CalculatorParams;
+  /** Authorities backing `stats` (the current LA/region/national selection). */
+  authorities: LocalAuthority[];
 }
 
 export const KPICards: React.FC<KPICardsProps> = ({
@@ -29,7 +31,8 @@ export const KPICards: React.FC<KPICardsProps> = ({
   regionalStats,
   showBenchmark,
   durationFilter = 'all',
-  calculatorParams = { recoveryPerCase: 2800, strikeRate: 0.75 },
+  calculatorParams = { recoveryPerCase: 2800, strikeRate: 0.75 } as CalculatorParams,
+  authorities,
 }) => {
   const isSuppressed = currentLA && currentLA.termsData[stats.term]?.totalCME === 'c';
 
@@ -38,16 +41,21 @@ export const KPICards: React.FC<KPICardsProps> = ({
   const w1_8 = stats.durationWeeks.weeks1To8;
   const actionable8Plus = w8_12 + w12p;
 
-  const nat_w8_12 = nationalStats.durationWeeks.weeks8To12;
-  const nat_w12p = nationalStats.durationWeeks.weeks12Plus;
-  const nat_actionable8Plus = nat_w8_12 + nat_w12p;
-
-  const effectiveValPerCase = calculatorParams.recoveryPerCase * calculatorParams.strikeRate;
-  const totalYield8Plus = Math.round(actionable8Plus * effectiveValPerCase);
-  const yield8_12 = Math.round(w8_12 * effectiveValPerCase);
-  const yield12p = Math.round(w12p * effectiveValPerCase);
-
-  const nat_totalYield8Plus = Math.round(nat_actionable8Plus * effectiveValPerCase);
+  // Scoped yield (Stage 4 method via cmeScope.ts), band-split the same way
+  // stratosCalculations.ts does: yield at the active threshold, and yield at
+  // 12 weeks specifically, so the 8-12 band is the difference between them.
+  // Replaces duration-band-count * effectiveValPerCase, which priced every
+  // reason regardless of scope tier. null when the term has no published
+  // reason breakdown (Reason is published for Autumn 2025/26 only).
+  const yieldAtActiveThreshold = computeSelectionYield(authorities, stats.term, calculatorParams);
+  const yieldAt12 = computeSelectionYield(authorities, stats.term, {
+    ...calculatorParams,
+    durationThreshold: 12,
+  });
+  const yieldDataAvailable = yieldAtActiveThreshold.available && yieldAt12.available;
+  const totalYield8Plus = yieldDataAvailable ? yieldAtActiveThreshold.value : null;
+  const yield12p = yieldDataAvailable ? yieldAt12.value : null;
+  const yield8_12 = yieldDataAvailable ? Math.max(0, yieldAtActiveThreshold.value - yieldAt12.value) : null;
 
   // Percentages for visual progress bars
   const totalCMEPercent = Math.min(100, Math.max(15, Math.round((stats.totalCME / Math.max(nationalStats.totalCME, 1)) * 100)));
@@ -139,7 +147,11 @@ export const KPICards: React.FC<KPICardsProps> = ({
 
           <div className="mt-1">
             <span className="text-3xl sm:text-4xl font-bold tracking-tight text-[#B91C1C] leading-none block">
-              {formatUKCurrency(yield8_12)}
+              {yield8_12 == null ? (
+                <span className="text-lg font-semibold text-neutral-400" title={REASON_DATA_UNAVAILABLE_MESSAGE}>Not published</span>
+              ) : (
+                formatUKCurrency(yield8_12)
+              )}
             </span>
           </div>
 
@@ -170,7 +182,11 @@ export const KPICards: React.FC<KPICardsProps> = ({
 
           <div className="mt-1">
             <span className="text-3xl sm:text-4xl font-bold tracking-tight text-[#B91C1C] leading-none block">
-              {formatUKCurrency(yield12p)}
+              {yield12p == null ? (
+                <span className="text-lg font-semibold text-neutral-400" title={REASON_DATA_UNAVAILABLE_MESSAGE}>Not published</span>
+              ) : (
+                formatUKCurrency(yield12p)
+              )}
             </span>
           </div>
 
@@ -201,7 +217,11 @@ export const KPICards: React.FC<KPICardsProps> = ({
 
           <div className="mt-1">
             <span className="text-3xl sm:text-4xl font-bold tracking-tight text-[#FE5729] leading-none block">
-              {formatUKCurrency(totalYield8Plus)}
+              {totalYield8Plus == null ? (
+                <span className="text-lg font-semibold text-neutral-400" title={REASON_DATA_UNAVAILABLE_MESSAGE}>Not published</span>
+              ) : (
+                formatUKCurrency(totalYield8Plus)
+              )}
             </span>
           </div>
 

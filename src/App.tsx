@@ -29,7 +29,8 @@ import {
   formatUKNumber,
   TOTAL_AUTHORITIES_COUNT,
   termHasReasonData,
-  REASON_DATA_UNAVAILABLE_MESSAGE
+  REASON_DATA_UNAVAILABLE_MESSAGE,
+  computeSelectionYield
 } from './data/cmeData';
 import { DFE_REASON_CATEGORIES, parseCell, SCOPE_TIERS } from './data/cmeScope';
 import { EstimateMarker } from './components/stratos/EstimateMarker';
@@ -230,7 +231,6 @@ export default function App() {
   const handleExportCSV = () => {
     const term = filters.selectedTerm;
     const lasToExport = scopedLAs;
-    const effectiveValPerCase = calculatorParams.recoveryPerCase * calculatorParams.strikeRate;
 
     const headers = [
       'Local Authority Name',
@@ -262,7 +262,12 @@ export default function App() {
       const w12p = Math.round(rawW12p * factor);
 
       const target8Plus = w8_12 + w12p;
-      const recoveryYield = Math.round(target8Plus * effectiveValPerCase);
+      // Scoped yield: each authority's own reason/duration breakdown, scoped
+      // and priced via cmeScope.ts, matching Stage 4 exactly. Previously this
+      // was target8Plus * effectiveValPerCase, which priced every reason
+      // regardless of scope tier and ignored the threshold control.
+      const laYield = computeSelectionYield([la], term, calculatorParams);
+      const recoveryYield = laYield.available ? laYield.value : null;
 
       // Largest published DfE category, named verbatim. Previously this reported
       // one of seven invented buckets, which renamed and merged published
@@ -294,7 +299,7 @@ export default function App() {
         d?.durationWeeks?.weeks8To12 === 'c' ? '"c (<5)"' : w8_12,
         d?.durationWeeks?.weeks12Plus === 'c' ? '"c (<5)"' : w12p,
         target8Plus,
-        recoveryYield,
+        recoveryYield === null ? `"${REASON_DATA_UNAVAILABLE_MESSAGE}"` : recoveryYield,
         d?.durationWeeks?.weeks1To8 === 'c' ? '"c (<5)"' : w1_8,
         `"${topReason}"`,
       ].join(',');
@@ -443,6 +448,7 @@ export default function App() {
               showBenchmark={filters.compareBenchmark}
               durationFilter={filters.durationFilter}
               calculatorParams={calculatorParams}
+              authorities={scopedLAs}
             />
 
             {/* Visualisations Suite (Recharts) */}

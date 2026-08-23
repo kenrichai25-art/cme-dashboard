@@ -1,5 +1,6 @@
 import { AcademicTerm, AggregatedStats, LocalAuthority, Region, TermDataPoint } from '../types';
 import officialDataJson from './officialDfeData.json';
+import { scopeCohort, computeYield, ScopeTierId, DurationThreshold } from './cmeScope';
 
 // The ten real DfE regions present in the data. Excludes 'All England' — that is a
 // filter sentinel meaning "no region filter", not a region of its own.
@@ -357,6 +358,75 @@ export function getPublishedBreakdown(
     totalRaw: total,
     source: 'summed',
   };
+}
+
+export interface SelectionYieldParams {
+  recoveryPerCase: number;
+  strikeRate: number;
+  includeTiers?: ScopeTierId[];
+  durationThreshold?: DurationThreshold;
+}
+
+export interface SelectionYield {
+  /** False when the term has no published reason breakdown. cases/value are
+   *  both 0 in that case and MUST NOT be rendered as a real figure — show
+   *  REASON_DATA_UNAVAILABLE_MESSAGE instead. */
+  available: boolean;
+  cases: number;
+  value: number;
+}
+
+/**
+ * Scoped financial yield for a set of authorities, computed exactly the way
+ * computeSTRATOSLEAs / Stage 4 established: each authority's own published
+ * reason and duration breakdown is scoped with scopeCohort() and priced with
+ * computeYield() individually, then summed. This is deliberately NOT one
+ * scopeCohort() call against a blanket National or Regional row — DfE do not
+ * cross-tabulate reason with duration at any level, so a single national
+ * duration profile applied to the national reason count is a *different,
+ * less accurate* estimate than summing each authority's own profile (~1,744
+ * cases nationally at 8 weeks abroad-only, vs. ~1,974 summing per authority —
+ * the second is the one the brief's benchmark is built from).
+ *
+ * Pass `[la]` for a single authority, a region's filtered list, or the full
+ * national list — the summing behaviour is the same in every case.
+ *
+ * This replaces any calculation of yield as
+ * (duration band count) * (recoveryPerCase * strikeRate), which counts every
+ * reason regardless of scope tier and ignores the threshold control entirely.
+ *
+ * Reason is published for Autumn 2025/26 only, so this refuses to compute a
+ * figure for a term without it — available:false, not a duration-only
+ * approximation, so it can never be mistaken for a real number.
+ */
+export function computeSelectionYield(
+  authorities: LocalAuthority[],
+  term: AcademicTerm,
+  params: SelectionYieldParams
+): SelectionYield {
+  if (!termHasReasonData(term)) {
+    return { available: false, cases: 0, value: 0 };
+  }
+  let cases = 0;
+  let value = 0;
+  for (const la of authorities) {
+    const d = la.termsData[term];
+    if (!d) continue;
+    const cohort = scopeCohort(
+      d.officialReasons || {},
+      d.officialDurations || {},
+      d.totalRaw ?? d.totalCME,
+      params.durationThreshold ?? 8
+    );
+    const result = computeYield(cohort, {
+      recoveryPerCase: params.recoveryPerCase,
+      strikeRate: params.strikeRate,
+      includeTiers: params.includeTiers,
+    });
+    cases += result.cases;
+    value += result.value;
+  }
+  return { available: true, cases, value };
 }
 
 export interface AggregateScope {

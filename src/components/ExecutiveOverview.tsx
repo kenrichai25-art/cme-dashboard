@@ -55,7 +55,8 @@ import {
   formatRatePer100,
   RATE_PER_100_LABEL,
   termHasReasonData,
-  REASON_DATA_UNAVAILABLE_MESSAGE
+  REASON_DATA_UNAVAILABLE_MESSAGE,
+  computeSelectionYield
 } from '../data/cmeData';
 import { ReasonDataUnavailable } from './ReasonDataUnavailable';
 import { scopeCohort, SCOPE_TIERS } from '../data/cmeScope';
@@ -83,7 +84,6 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
   calculatorParams,
   stratosNationalAggregate,
 }) => {
-  const effectiveValPerCase = calculatorParams.recoveryPerCase * calculatorParams.strikeRate;
 
   // Reason is published for Autumn 2025/26 only; Duration is published for
   // every term shown. Anything built from scopeCohort() must check this.
@@ -123,7 +123,11 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
     const regLAs = LOCAL_AUTHORITIES_DATA.filter((la) => la.region === reg);
     const agg = calculateAggregate(regLAs, filters.selectedTerm, reg, { region: reg });
     const target8Plus = agg.durationWeeks.weeks8To12 + agg.durationWeeks.weeks12Plus;
-    const estRecovery = Math.round(target8Plus * effectiveValPerCase);
+    // Scoped yield summed per authority in the region (Stage 4 method), not
+    // target8Plus * effectiveValPerCase. null when the term has no
+    // published reason breakdown.
+    const regYield = computeSelectionYield(regLAs, filters.selectedTerm, calculatorParams);
+    const estRecovery = regYield.available ? regYield.value : null;
 
     return {
       region: reg,
@@ -144,7 +148,10 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
       const w8_12 = typeof d?.durationWeeks?.weeks8To12 === 'number' ? d.durationWeeks.weeks8To12 : 0;
       const w12p = typeof d?.durationWeeks?.weeks12Plus === 'number' ? d.durationWeeks.weeks12Plus : 0;
       const target8p = w8_12 + w12p;
-      const recovery = Math.round(target8p * effectiveValPerCase);
+      // Scoped yield for this authority (Stage 4 method), not
+      // target8p * effectiveValPerCase.
+      const laYield = computeSelectionYield([la], filters.selectedTerm, calculatorParams);
+      const recovery = laYield.available ? laYield.value : null;
       return {
         code: la.code,
         name: la.name,
@@ -546,7 +553,13 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
                       <span className="text-xs text-neutral-400 block font-normal" title={RATE_PER_100_LABEL}>{formatRatePer100(reg.ratePer100Published)}</span>
                     </div>
                     <div className="text-right min-w-[105px]">
-                      <span className="font-semibold text-emerald-700 text-sm sm:text-base block">{formatUKCurrency(reg.estRecovery)}</span>
+                      <span className="font-semibold text-emerald-700 text-sm sm:text-base block">
+                        {reg.estRecovery == null ? (
+                          <span className="text-neutral-400 font-medium text-xs" title={REASON_DATA_UNAVAILABLE_MESSAGE}>Not published</span>
+                        ) : (
+                          formatUKCurrency(reg.estRecovery)
+                        )}
+                      </span>
                       <span className="text-[10px] text-neutral-400 block font-normal">Financial Impact</span>
                     </div>
                     <button
@@ -607,7 +620,11 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
                       {formatUKNumber(la.totalCME)} CME
                     </span>
                     <span className="font-semibold text-emerald-700 text-xs sm:text-sm block">
-                      {formatUKCurrency(la.recovery)}
+                      {la.recovery == null ? (
+                        <span className="text-neutral-400 font-medium" title={REASON_DATA_UNAVAILABLE_MESSAGE}>Not published</span>
+                      ) : (
+                        formatUKCurrency(la.recovery)
+                      )}
                     </span>
                   </div>
                 </div>

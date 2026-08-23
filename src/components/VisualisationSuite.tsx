@@ -49,7 +49,9 @@ import {
   getPublishedBreakdown,
   SCOPE_TIER_COLORS,
   TOTAL_AUTHORITIES_COUNT,
-  termHasReasonData
+  termHasReasonData,
+  REASON_DATA_UNAVAILABLE_MESSAGE,
+  computeSelectionYield
 } from '../data/cmeData';
 import { scopeCohort, buildReasonTable, SCOPE_TIERS } from '../data/cmeScope';
 import officialDataJson from '../data/officialDfeData.json';
@@ -72,7 +74,7 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
   nationalStats,
   onSelectLA,
   onSelectDuration,
-  calculatorParams = { recoveryPerCase: 2800, strikeRate: 0.75 },
+  calculatorParams = { recoveryPerCase: 2800, strikeRate: 0.75 } as CalculatorParams,
 }) => {
   const [rankingMode, setRankingMode] = useState<'la' | 'region'>('la');
   const [activeReasonIndex, setActiveReasonIndex] = useState<number | null>(null);
@@ -80,7 +82,6 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
   const [reasonDisplayMode, setReasonDisplayMode] = useState<'tiers' | 'all20'>('tiers');
 
   const durationFilter = filters.durationFilter;
-  const effectiveValPerCase = calculatorParams.recoveryPerCase * calculatorParams.strikeRate;
 
   // 1. Prepare Trajectory Data across all 4 published terms (2024/25 Autumn through 2025/26 Autumn)
   const chronologicalTerms = [...ACADEMIC_TERMS].reverse();
@@ -106,7 +107,13 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
       .replace('2025/26 Autumn', 'Aut 25');
 
     const actionableTargetCount = agg.durationWeeks.weeks8To12 + agg.durationWeeks.weeks12Plus;
-    const modeledYieldVal = Math.round(actionableTargetCount * effectiveValPerCase);
+    // Scoped yield for this term's authorities, summed per authority (Stage 4
+    // method) rather than actionableTargetCount * effectiveValPerCase, which
+    // priced every reason regardless of scope tier. Reason is published for
+    // Autumn 2025/26 only, so earlier terms show a gap in this series, not a
+    // fabricated number.
+    const termYield = computeSelectionYield(trajectoryLAs, term, calculatorParams);
+    const modeledYieldVal = termYield.available ? termYield.value : null;
 
     let activeCohortCount = agg.totalCME;
     if (durationFilter === '1-8') {
@@ -143,7 +150,11 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
       const w8_12 = typeof data?.durationWeeks?.weeks8To12 === 'number' ? data.durationWeeks.weeks8To12 : 0;
       const w12p = typeof data?.durationWeeks?.weeks12Plus === 'number' ? data.durationWeeks.weeks12Plus : 0;
       const target8Plus = w8_12 + w12p;
-      const recoveryYield = Math.round(target8Plus * effectiveValPerCase);
+      // Scoped yield for this authority (Stage 4 method), not
+      // target8Plus * effectiveValPerCase. null when the term has no
+      // published reason breakdown.
+      const laYield = computeSelectionYield([la], termForComparison, calculatorParams);
+      const recoveryYield = laYield.available ? laYield.value : null;
 
       let displayCount = target8Plus;
       if (durationFilter === '1-8') {
@@ -185,7 +196,10 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
     const agg = calculateAggregate(lasInReg, termForComparison, region, { region });
 
     const target8Plus = agg.durationWeeks.weeks8To12 + agg.durationWeeks.weeks12Plus;
-    const yieldVal = Math.round(target8Plus * effectiveValPerCase);
+    // Scoped yield summed per authority in the region (Stage 4 method), not
+    // target8Plus * effectiveValPerCase.
+    const regionYield = computeSelectionYield(lasInReg, termForComparison, calculatorParams);
+    const yieldVal = regionYield.available ? regionYield.value : null;
 
     let displayCount = target8Plus;
     if (durationFilter === '1-8') {
@@ -198,10 +212,12 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
       displayCount = agg.totalCME;
     }
 
-    const yieldLabel = yieldVal >= 1_000_000 
-      ? `£${(yieldVal / 1_000_000).toFixed(2)}M` 
-      : yieldVal >= 1_000 
-      ? `£${(yieldVal / 1_000).toFixed(0)}k` 
+    const yieldLabel = yieldVal == null
+      ? REASON_DATA_UNAVAILABLE_MESSAGE
+      : yieldVal >= 1_000_000
+      ? `£${(yieldVal / 1_000_000).toFixed(2)}M`
+      : yieldVal >= 1_000
+      ? `£${(yieldVal / 1_000).toFixed(0)}k`
       : `£${yieldVal.toLocaleString('en-GB')}`;
     const barLabel = `${yieldLabel} (${formatUKNumber(displayCount)})`;
 
@@ -265,9 +281,23 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
 
   const reasonsData = tierData;
 
-  // 4. Duration Breakdown Data for current active scope
-  const target8to12Yield = Math.round(currentStats.durationWeeks.weeks8To12 * effectiveValPerCase);
-  const target12PlusYield = Math.round(currentStats.durationWeeks.weeks12Plus * effectiveValPerCase);
+  // 4. Duration Breakdown Data for current active scope.
+  // Band split via scopeCohort()/computeYield() at the selected threshold and
+  // at 12 weeks (Stage 4 method), not weeks8To12 * effectiveValPerCase. Both
+  // are null when the term has no published reason breakdown.
+  const activeDurationThreshold = calculatorParams.durationThreshold ?? 8;
+  const currentScopeYieldAtThreshold = computeSelectionYield(trajectoryLAs, termForComparison, calculatorParams);
+  const currentScopeYieldAt12 = computeSelectionYield(trajectoryLAs, termForComparison, {
+    ...calculatorParams,
+    durationThreshold: 12,
+  });
+  const target12PlusYield = currentScopeYieldAt12.available ? currentScopeYieldAt12.value : null;
+  const target8to12Yield =
+    !currentScopeYieldAtThreshold.available || target12PlusYield == null
+      ? null
+      : activeDurationThreshold === 12
+      ? 0
+      : Math.max(0, currentScopeYieldAtThreshold.value - target12PlusYield);
 
   const durationCohortData = [
     {
@@ -398,7 +428,9 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
                     labelStyle={{ fontWeight: 'bold', color: '#FE5729', marginBottom: '4px' }}
                     itemStyle={{ color: '#f8fafc', fontWeight: 600 }}
                     formatter={(value: any, name: string) => {
-                      if (name.includes('Yield') || name.includes('Value')) return [formatGBP(Number(value)), name];
+                      if (name.includes('Yield') || name.includes('Value')) {
+                        return [value == null ? REASON_DATA_UNAVAILABLE_MESSAGE : formatGBP(Number(value)), name];
+                      }
                       if (name.includes('Count') || name.includes('Cases')) return [formatUKNumber(value) + ' pupils', name];
                       return [value, name];
                     }}
@@ -519,7 +551,9 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
                 <Tooltip
                   contentStyle={{ backgroundColor: '#1C1C1C', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
                   formatter={(value: any, name: string, item: any) => [
-                    `${formatUKNumber(value)} pupils (STRATOS Yield: ${formatGBP(item.payload.recoveryYield)})`,
+                    `${formatUKNumber(value)} pupils (STRATOS Yield: ${
+                      item.payload.recoveryYield == null ? REASON_DATA_UNAVAILABLE_MESSAGE : formatGBP(item.payload.recoveryYield)
+                    })`,
                     'CME Caseload',
                   ]}
                 />
@@ -773,10 +807,19 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
 
                   <div className="flex items-center justify-between mt-2 text-[11px] text-neutral-500">
                     <span className="line-clamp-1">{cohort.description}</span>
-                    {cohort.yieldVal > 0 && (
-                      <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md flex-shrink-0 ml-2">
-                        {formatGBP(cohort.yieldVal, true)}
+                    {cohort.yieldVal == null ? (
+                      <span
+                        className="text-neutral-400 font-medium flex-shrink-0 ml-2"
+                        title={REASON_DATA_UNAVAILABLE_MESSAGE}
+                      >
+                        Not published
                       </span>
+                    ) : (
+                      cohort.yieldVal > 0 && (
+                        <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md flex-shrink-0 ml-2">
+                          {formatGBP(cohort.yieldVal, true)}
+                        </span>
+                      )
                     )}
                   </div>
                 </div>
