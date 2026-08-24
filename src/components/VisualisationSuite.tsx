@@ -5,8 +5,6 @@ import {
   Area,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
   Cell,
   XAxis,
   YAxis,
@@ -53,9 +51,10 @@ import {
   REASON_DATA_UNAVAILABLE_MESSAGE,
   computeSelectionYield
 } from '../data/cmeData';
-import { scopeCohort, buildReasonTable, SCOPE_TIERS } from '../data/cmeScope';
+import { scopeCohort, buildReasonTable, computeYield, SCOPE_TIERS } from '../data/cmeScope';
 import officialDataJson from '../data/officialDfeData.json';
 import { ReasonDataUnavailable } from './ReasonDataUnavailable';
+import { EstimateMarker } from './stratos/EstimateMarker';
 
 interface VisualisationSuiteProps {
   currentStats: AggregatedStats;
@@ -257,10 +256,14 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
     publishedBreakdown.reasons,
     publishedBreakdown.durations,
     publishedBreakdown.totalRaw,
-    8
+    calculatorParams.durationThreshold ?? 8
   );
 
-  // Scope tier view: the three in-scope tiers plus Not in scope.
+  // Scope tier view: the three in-scope tiers plus Not in scope. Each
+  // in-scope tier's £ value is that tier alone at the active threshold —
+  // not the dashboard's selected-tiers total — so the panel can show what
+  // each tier is individually worth. Not in scope never counts toward yield,
+  // so it carries no £ figure at all rather than a computed zero.
   const tierData = scopedCohort.tiers.map((t) => ({
     name: t.tier.label,
     count: t.publishedCount,
@@ -272,6 +275,13 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
     description: t.tier.rationale,
     suppressedCells: t.suppressedCells,
     inScope: t.tier.countsTowardYield,
+    yieldVal: t.tier.countsTowardYield
+      ? computeYield(scopedCohort, {
+          recoveryPerCase: calculatorParams.recoveryPerCase,
+          strikeRate: calculatorParams.strikeRate,
+          includeTiers: [t.tier.id],
+        }).value
+      : null,
   }));
 
   // Reference table: all 20 published categories, verbatim, tier-marked.
@@ -673,58 +683,45 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
               </table>
             </div>
           ) : (
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mt-5 items-center">
-            <div className="md:col-span-5 h-56 flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={reasonsData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={2}
-                    dataKey="count"
-                    onMouseEnter={(_, index) => setActiveReasonIndex(index)}
-                    onMouseLeave={() => setActiveReasonIndex(null)}
-                  >
-                    {reasonsData.map((entry, index) => (
-                      <Cell
-                        key={`cell-reason-${index}`}
-                        fill={entry.color}
-                        stroke={activeReasonIndex === index ? '#1C1C1C' : 'transparent'}
-                        strokeWidth={2}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#1C1C1C', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
-                    formatter={(value: any, name: string, item: any) => [
-                      `${formatUKNumber(value)} pupils (${item.payload.percent}%)`,
-                      name,
-                    ]}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="md:col-span-7 max-h-56 overflow-y-auto space-y-1.5 pr-2 custom-scrollbar">
-              {reasonsData.map((reason, idx) => (
-                <div
-                  key={idx}
-                  onMouseEnter={() => setActiveReasonIndex(idx)}
-                  onMouseLeave={() => setActiveReasonIndex(null)}
-                  className={`p-2 rounded-xl text-xs flex items-center justify-between transition-all ${
-                    activeReasonIndex === idx ? 'bg-neutral-100 shadow-xs' : 'hover:bg-neutral-50'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2 truncate">
+          <div className="space-y-3 mt-5">
+            {reasonsData.map((reason, idx) => (
+              <div
+                key={idx}
+                onMouseEnter={() => setActiveReasonIndex(idx)}
+                onMouseLeave={() => setActiveReasonIndex(null)}
+                className={`p-3.5 rounded-2xl border transition-all ${
+                  activeReasonIndex === idx ? 'border-[#FE5729]/40 bg-[#FFF3F0]/30' : 'border-neutral-200/80 hover:border-neutral-300 hover:bg-neutral-50/50'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: reason.color }} />
-                    <span className="text-neutral-800 font-medium truncate" title={reason.description}>
+                    <span className="text-xs font-bold text-[#1C1C1C] truncate" title={reason.description}>
                       {reason.name}
                     </span>
                   </div>
-                  <div className="flex items-center space-x-2 flex-shrink-0 font-mono text-[11px]">
+                  {reason.yieldVal == null ? (
+                    <span className="text-neutral-400 text-[10px] font-semibold uppercase tracking-wide flex-shrink-0" title="Not a Child Benefit matter — never counted toward the estimated recovery value">
+                      Not a CB matter
+                    </span>
+                  ) : (
+                    <span className="font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md text-sm flex-shrink-0 flex items-center gap-1">
+                      {formatGBP(reason.yieldVal, true)}
+                      <EstimateMarker />
+                    </span>
+                  )}
+                </div>
+
+                <div className="w-full bg-neutral-100 rounded-full h-1.5 overflow-hidden mt-2">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, reason.percent)}%`, backgroundColor: reason.color }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between mt-2 text-[11px] text-neutral-500">
+                  <span className="line-clamp-1 pr-2">{reason.description}</span>
+                  <span className="flex items-center gap-1.5 flex-shrink-0 font-mono">
                     {reason.suppressedCells > 0 && (
                       <span className="text-neutral-400" title="Authorities reporting 'low': a count that rounds to 0 but is not 0">
                         +{reason.suppressedCells} low
@@ -732,10 +729,10 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
                     )}
                     <span className="font-bold text-neutral-900">{formatUKNumber(reason.count)}</span>
                     <span className="text-neutral-400">({reason.percent}%)</span>
-                  </div>
+                  </span>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
           )}
         </div>
