@@ -624,7 +624,14 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
                   </div>
 
                   <div className="text-right shrink-0">
-                    <span className="font-semibold text-[#1C1C1C] text-sm sm:text-base block">
+                    <span className="font-bold text-emerald-700 text-base sm:text-lg block">
+                      {la.recovery == null ? (
+                        <span className="text-neutral-400 font-medium text-xs sm:text-sm" title={REASON_DATA_UNAVAILABLE_MESSAGE}>Not published</span>
+                      ) : (
+                        formatUKCurrency(la.recovery)
+                      )}
+                    </span>
+                    <span className="font-medium text-neutral-500 text-xs sm:text-sm block">
                       {la.rate == null ? (
                         <span className="text-neutral-400 text-xs">Not published</span>
                       ) : (
@@ -639,13 +646,6 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
                           )}
                           {la.rate.toFixed(2)} / 100
                         </>
-                      )}
-                    </span>
-                    <span className="font-semibold text-emerald-700 text-xs sm:text-sm block">
-                      {la.recovery == null ? (
-                        <span className="text-neutral-400 font-medium" title={REASON_DATA_UNAVAILABLE_MESSAGE}>Not published</span>
-                      ) : (
-                        formatUKCurrency(la.recovery)
                       )}
                     </span>
                   </div>
