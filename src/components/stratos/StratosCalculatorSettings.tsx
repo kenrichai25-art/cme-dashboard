@@ -7,16 +7,12 @@ import { CalculatorParams } from '../../types';
 import { formatGBP } from '../../utils/stratosCalculations';
 import { TOTAL_AUTHORITIES_COUNT } from '../../data/cmeData';
 import {
-  SCOPE_TIERS,
   THRESHOLD_NOTES,
   BANDS_AT_OR_OVER,
-  ScopeTierId,
   DurationThreshold,
 } from '../../data/cmeScope';
 import { EstimateMarker } from './EstimateMarker';
 
-// The three tiers that can carry yield. Not in scope is excluded by definition.
-const YIELD_TIERS = SCOPE_TIERS.filter((t) => t.countsTowardYield);
 const THRESHOLD_OPTIONS = Object.keys(BANDS_AT_OR_OVER).map(Number) as DurationThreshold[];
 
 interface StratosCalculatorSettingsProps {
@@ -31,15 +27,7 @@ export const StratosCalculatorSettings: React.FC<StratosCalculatorSettingsProps>
   onResetParams,
 }) => {
   const effectiveValue = params.recoveryPerCase * params.strikeRate;
-  const includeTiers = params.includeTiers ?? ['abroad'];
   const durationThreshold = params.durationThreshold ?? 8;
-
-  const toggleTier = (id: ScopeTierId) => {
-    const next = includeTiers.includes(id)
-      ? includeTiers.filter((t) => t !== id)
-      : [...includeTiers, id];
-    onChangeParams({ ...params, includeTiers: next });
-  };
 
   const setPreset = (recovery: number, strike: number) => {
     onChangeParams({
@@ -191,71 +179,38 @@ export const StratosCalculatorSettings: React.FC<StratosCalculatorSettingsProps>
         </div>
       </div>
 
-      {/* Scope controls: which tiers count, and the absence threshold */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-5 border-t border-neutral-100">
-        {/* Tier inclusion */}
-        <div className="bg-[#F4F4F6] p-4 rounded-2xl border border-neutral-200/80">
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-bold text-[#1C1C1C] flex items-center gap-1.5">
-              <span>Cohort in Scope</span>
-              <EstimateMarker />
-            </label>
-            <span className="text-[10px] text-neutral-400 font-normal">Default: abroad only</span>
-          </div>
-          <div className="space-y-1.5">
-            {YIELD_TIERS.map((tier) => {
-              const checked = includeTiers.includes(tier.id);
-              return (
-                <label
-                  key={tier.id}
-                  className="flex items-start gap-2 text-xs text-neutral-700 cursor-pointer"
-                  title={tier.rationale}
+      {/* Absence threshold. Which tiers count toward yield now lives in the
+          persistent header Scope Tier toggle (visible on every tab), not
+          duplicated here. Laid out left (control) + right (explanation) so
+          the box uses its full width now that it's no longer sharing a
+          2-column grid with the removed Cohort in Scope card. */}
+      <div className="pt-5 border-t border-neutral-100">
+        <div className="bg-[#F4F4F6] p-4 rounded-2xl border border-neutral-200/80 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="sm:w-60 flex-shrink-0">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-bold text-[#1C1C1C] flex items-center gap-1.5">
+                <span>Absence Threshold</span>
+                <EstimateMarker />
+              </label>
+              <span className="text-[10px] text-neutral-400 font-normal">Default: 8 weeks</span>
+            </div>
+            <div className="flex items-center space-x-1 bg-white p-1 rounded-full border border-neutral-200 text-xs w-fit">
+              {THRESHOLD_OPTIONS.map((weeks) => (
+                <button
+                  key={weeks}
+                  onClick={() => onChangeParams({ ...params, durationThreshold: weeks })}
+                  className={`px-3 py-1 rounded-full transition-all font-bold cursor-pointer ${
+                    durationThreshold === weeks
+                      ? 'bg-[#FE5729] text-white shadow-xs'
+                      : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleTier(tier.id)}
-                    className="mt-0.5 accent-[#FE5729] cursor-pointer"
-                  />
-                  <span>
-                    <span className="font-semibold text-[#1C1C1C]">{tier.label}</span>
-                    {tier.id === 'untraceable' && (
-                      <span className="block text-[10px] text-amber-700 font-medium">
-                        conversion rate unknown until sampled
-                      </span>
-                    )}
-                  </span>
-                </label>
-              );
-            })}
+                  {weeks} weeks
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-
-        {/* Duration threshold */}
-        <div className="bg-[#F4F4F6] p-4 rounded-2xl border border-neutral-200/80">
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-bold text-[#1C1C1C] flex items-center gap-1.5">
-              <span>Absence Threshold</span>
-              <EstimateMarker />
-            </label>
-            <span className="text-[10px] text-neutral-400 font-normal">Default: 8 weeks</span>
-          </div>
-          <div className="flex items-center space-x-1 bg-white p-1 rounded-full border border-neutral-200 text-xs w-fit">
-            {THRESHOLD_OPTIONS.map((weeks) => (
-              <button
-                key={weeks}
-                onClick={() => onChangeParams({ ...params, durationThreshold: weeks })}
-                className={`px-3 py-1 rounded-full transition-all font-bold cursor-pointer ${
-                  durationThreshold === weeks
-                    ? 'bg-[#FE5729] text-white shadow-xs'
-                    : 'text-neutral-600 hover:text-neutral-900'
-                }`}
-              >
-                {weeks} weeks
-              </button>
-            ))}
-          </div>
-          <p className="text-[11px] text-neutral-500 mt-2 leading-relaxed">
+          <p className="text-[11px] text-neutral-500 leading-relaxed sm:pl-4 sm:border-l sm:border-neutral-200">
             {THRESHOLD_NOTES[durationThreshold]}
           </p>
         </div>
