@@ -699,7 +699,7 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
                       Not a CB matter
                     </span>
                   ) : (
-                    <span className="font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md text-sm flex-shrink-0 flex items-center gap-1">
+                    <span className="font-extrabold text-emerald-700 text-xl sm:text-2xl flex-shrink-0 flex items-center gap-1.5 leading-none">
                       {formatGBP(reason.yieldVal, true)}
                       <EstimateMarker />
                     </span>
@@ -782,14 +782,22 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cohort.color }} />
-                      <span className="text-xs font-bold text-[#1C1C1C]">{cohort.name}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cohort.color }} />
+                      <span className="text-xs font-bold text-[#1C1C1C] truncate">{cohort.name}</span>
                     </div>
-                    <div className="flex items-center gap-2 font-mono text-xs">
-                      <span className="font-extrabold text-neutral-900">{formatUKNumber(cohort.count)}</span>
-                      <span className="text-neutral-400 font-normal">({cohort.percent}%)</span>
-                    </div>
+                    {cohort.yieldVal == null ? (
+                      <span
+                        className="text-neutral-400 text-[10px] font-semibold uppercase tracking-wide flex-shrink-0"
+                        title={REASON_DATA_UNAVAILABLE_MESSAGE}
+                      >
+                        Not published
+                      </span>
+                    ) : cohort.yieldVal > 0 ? (
+                      <span className="font-extrabold text-emerald-700 text-xl sm:text-2xl flex-shrink-0 leading-none">
+                        {formatGBP(cohort.yieldVal, true)}
+                      </span>
+                    ) : null}
                   </div>
 
                   <div className="w-full bg-neutral-100 rounded-full h-1.5 overflow-hidden">
@@ -803,21 +811,11 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
                   </div>
 
                   <div className="flex items-center justify-between mt-2 text-[11px] text-neutral-500">
-                    <span className="line-clamp-1">{cohort.description}</span>
-                    {cohort.yieldVal == null ? (
-                      <span
-                        className="text-neutral-400 font-medium flex-shrink-0 ml-2"
-                        title={REASON_DATA_UNAVAILABLE_MESSAGE}
-                      >
-                        Not published
-                      </span>
-                    ) : (
-                      cohort.yieldVal > 0 && (
-                        <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md flex-shrink-0 ml-2">
-                          {formatGBP(cohort.yieldVal, true)}
-                        </span>
-                      )
-                    )}
+                    <span className="line-clamp-1 pr-2">{cohort.description}</span>
+                    <span className="flex-shrink-0 font-mono">
+                      <span className="font-bold text-neutral-900">{formatUKNumber(cohort.count)}</span>
+                      <span className="text-neutral-400"> ({cohort.percent}%)</span>
+                    </span>
                   </div>
                 </div>
               );
