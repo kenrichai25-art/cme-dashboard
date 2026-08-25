@@ -19,7 +19,7 @@
      (recharts margins, label font sizes) that a font-size trick alone
      can't reach — so the whole dashboard is smaller and less scrolling
      is needed to see it. */
-  zoom: 0.8;
+  zoom: 0.6;
 }
 
 body {
