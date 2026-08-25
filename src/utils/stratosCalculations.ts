@@ -155,19 +155,25 @@ export function computeSTRATOSLEAs(
     const w12_plus_pct = totalCme > 0 ? (w12_plus / totalCme) * 100 : 0;
     const avg_value_per_cme = totalCme > 0 ? total_potential / totalCme : 0;
 
-    // Risk tier: in-scope cohort size at the active threshold (inScopeAtThreshold
-    // from scopeCohort() above, so it moves with the 8/12-week toggle the same
-    // way every yield figure does) combined with DfE's published rate_per_100.
-    // Previously thresholded against estimated £ value (£500k/£200k/£50k),
-    // calibrated to the unscoped ~£37m yield that no longer exists post-Stage-4.
-    // Breakpoints are percentile-anchored to the actual distribution across the
-    // 153 authorities at Autumn 2025/26 (~p95/p85/p70 on both measures), not
-    // round numbers. OR, not AND: a large authority can carry a big absolute
-    // in-scope cohort at an unremarkable rate, and a small authority can carry
-    // an anomalous rate at a modest headcount — requiring both would hide
-    // either kind of problem.
+    // Risk tier: in-scope cohort size at the active threshold, filtered to
+    // the selected Scope tiers the same way computeYield() is — previously
+    // this used cohortAtThreshold.inScopeAtThreshold directly, which sums
+    // all three yield-eligible tiers regardless of includeTiers, so risk
+    // classification stayed frozen while every £ figure on screen reacted
+    // to the Scope Tier toggle. Now both move together. Combined with DfE's
+    // published rate_per_100. Previously thresholded against estimated £
+    // value (£500k/£200k/£50k), calibrated to the unscoped ~£37m yield that
+    // no longer exists post-Stage-4. Breakpoints are percentile-anchored to
+    // the actual distribution across the 153 authorities at Autumn 2025/26
+    // (~p95/p85/p70 on both measures), not round numbers. OR, not AND: a
+    // large authority can carry a big absolute in-scope cohort at an
+    // unremarkable rate, and a small authority can carry an anomalous rate
+    // at a modest headcount — requiring both would hide either kind of
+    // problem.
     const riskDataAvailable = termHasReasonData(selectedTerm);
-    const inScopeForRisk = cohortAtThreshold.inScopeAtThreshold;
+    const inScopeForRisk = cohortAtThreshold.tiers
+      .filter((t) => t.tier.countsTowardYield && includeTiers.includes(t.tier.id))
+      .reduce((sum, t) => sum + t.estimatedAtThreshold, 0);
     const rateRaw = termData?.ratePer100Published;
     const ratePer100ForRisk = !rateRaw || rateRaw === 'x' || rateRaw === 'low' ? 0 : parseDfENumber(rateRaw, 0);
 

@@ -140,16 +140,21 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
   const targetCases = scopedYield.cases;
   const totalYieldValue = scopedYield.value;
 
-  // Risk tier: in-scope cohort size at the active threshold (from the same
-  // scopedCohortAtThreshold above, via scopeCohort()) combined with DfE's
-  // published rate_per_100 — not estimated £ value. Same breakpoints as
-  // stratosCalculations.ts's computeSTRATOSLEAs, percentile-anchored to the
-  // actual distribution across the 153 authorities at Autumn 2025/26
-  // (~p95/p85/p70 on both measures). OR, not AND: a large authority can carry
-  // a big absolute in-scope cohort at an unremarkable rate, and a small
-  // authority can carry an anomalous rate at a modest headcount — requiring
-  // both would hide either kind of problem.
-  const inScopeForRisk = scopedCohortAtThreshold.inScopeAtThreshold;
+  // Risk tier: in-scope cohort size at the active threshold, filtered to the
+  // selected Scope tiers the same way computeYield() is (same fix as
+  // stratosCalculations.ts's computeSTRATOSLEAs — previously this used
+  // scopedCohortAtThreshold.inScopeAtThreshold directly, which sums all
+  // three yield-eligible tiers regardless of includeTiers). Combined with
+  // DfE's published rate_per_100 — not estimated £ value. Same breakpoints
+  // as computeSTRATOSLEAs, percentile-anchored to the actual distribution
+  // across the 153 authorities at Autumn 2025/26 (~p95/p85/p70 on both
+  // measures). OR, not AND: a large authority can carry a big absolute
+  // in-scope cohort at an unremarkable rate, and a small authority can carry
+  // an anomalous rate at a modest headcount — requiring both would hide
+  // either kind of problem.
+  const inScopeForRisk = scopedCohortAtThreshold.tiers
+    .filter((t) => t.tier.countsTowardYield && includeTiers.includes(t.tier.id))
+    .reduce((sum, t) => sum + t.estimatedAtThreshold, 0);
   const rateRawForRisk = currentTermData?.ratePer100Published;
   const ratePer100ForRisk =
     !rateRawForRisk || rateRawForRisk === 'x' || rateRawForRisk === 'low' ? 0 : parseDfENumber(rateRawForRisk, 0);
