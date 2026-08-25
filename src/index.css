@@ -13,11 +13,13 @@
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-html {
-  /* Scales every rem-based Tailwind utility (padding, gaps, text, radii,
-     chart heights) down together, so more of the dashboard fits on screen
-     at once without a component-by-component redesign. */
-  font-size: 87.5%;
+#root {
+  /* True browser-style zoom-out (like Ctrl+-): rescales every rendered
+     pixel — Tailwind's rem-based sizing AND raw-px chart internals
+     (recharts margins, label font sizes) that a font-size trick alone
+     can't reach — so the whole dashboard is smaller and less scrolling
+     is needed to see it. */
+  zoom: 0.8;
 }
 
 body {
