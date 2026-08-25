@@ -42,26 +42,63 @@ export const KPICards: React.FC<KPICardsProps> = ({
   const w12p = stats.durationWeeks.weeks12Plus;
   const actionable8Plus = w8_12 + w12p;
 
-  // Card 2: published duration count at or beyond the active threshold — not
-  // an estimate, and NOT gated by reason-data availability (Duration is
-  // published for every term shown; Reason is Autumn 2025/26 only).
+  // Card 2: published duration count — not an estimate, and NOT gated by
+  // reason-data availability (Duration is published for every term shown;
+  // Reason is Autumn 2025/26 only). When the Duration Cohort filter narrows
+  // to a specific published band, that band's own count takes over here,
+  // independent of the Absence Threshold setting below (Financial Impact
+  // tab) — the two are separate controls and shouldn't be conflated.
   const threshold = calculatorParams.durationThreshold ?? 8;
-  const pastThreshold = threshold === 12 ? w12p : actionable8Plus;
+  let pastThreshold: number;
+  let pastThresholdLabel: string;
+  if (durationFilter === '8-12') {
+    pastThreshold = w8_12;
+    pastThresholdLabel = '8–12 weeks (DfE published)';
+  } else if (durationFilter === '12+') {
+    pastThreshold = w12p;
+    pastThresholdLabel = '12+ weeks (DfE published)';
+  } else {
+    pastThreshold = threshold === 12 ? w12p : actionable8Plus;
+    pastThresholdLabel = `${threshold}+ weeks (DfE published)`;
+  }
 
-  // Cards 3 & 4: tier-scoped estimate at the active threshold (Stage 4
-  // method via cmeScope.ts — each authority's own reason and duration
-  // breakdown scoped with scopeCohort()/computeYield(), then summed).
-  // Replaces duration-band-count * effectiveValPerCase, which priced every
-  // reason regardless of scope tier. Unavailable when the term has no
-  // published reason breakdown (Reason is published for Autumn 2025/26
-  // only) — Duration-only card 2 above is unaffected by this gate.
+  // Cards 3 & 4: tier-scoped estimate (Stage 4 method via cmeScope.ts — each
+  // authority's own reason and duration breakdown scoped with
+  // scopeCohort()/computeYield(), then summed). Replaces duration-band-count
+  // * effectiveValPerCase, which priced every reason regardless of scope
+  // tier. Unavailable when the term has no published reason breakdown
+  // (Reason is published for Autumn 2025/26 only) — Duration-only card 2
+  // above is unaffected by this gate.
+  //
+  // Scoped the same way as card 2: the Duration Cohort filter, when set to
+  // a specific band, overrides the Absence Threshold for this estimate too.
+  // The 8-12 band isn't a single scopeCohort() threshold, so it's derived
+  // as (yield at 8+) minus (yield at 12+) — the same subtraction the
+  // Duration Stack chart uses for its own 8-12 segment.
   const includeTierIds = calculatorParams.includeTiers ?? ['abroad'];
   const includedTierLabels = SCOPE_TIERS.filter((t) => includeTierIds.includes(t.id)).map((t) => t.label);
   const tierSubtitle = includedTierLabels.length ? includedTierLabels.join(' + ') : 'no tiers selected';
 
-  const yieldAtActiveThreshold = computeSelectionYield(authorities, stats.term, calculatorParams);
-  const inScopeCases = yieldAtActiveThreshold.available ? yieldAtActiveThreshold.cases : null;
-  const inScopeValue = yieldAtActiveThreshold.available ? yieldAtActiveThreshold.value : null;
+  const yieldAt8 = computeSelectionYield(authorities, stats.term, { ...calculatorParams, durationThreshold: 8 });
+  const yieldAt12 = computeSelectionYield(authorities, stats.term, { ...calculatorParams, durationThreshold: 12 });
+
+  let inScopeCases: number | null;
+  let inScopeValue: number | null;
+  let inScopeDurationLabel: string;
+  if (durationFilter === '8-12') {
+    inScopeCases = yieldAt8.available && yieldAt12.available ? Math.max(0, yieldAt8.cases - yieldAt12.cases) : null;
+    inScopeValue = yieldAt8.available && yieldAt12.available ? Math.max(0, yieldAt8.value - yieldAt12.value) : null;
+    inScopeDurationLabel = '8–12 weeks';
+  } else if (durationFilter === '12+') {
+    inScopeCases = yieldAt12.available ? yieldAt12.cases : null;
+    inScopeValue = yieldAt12.available ? yieldAt12.value : null;
+    inScopeDurationLabel = '12+ weeks';
+  } else {
+    const yieldAtActiveThreshold = threshold === 12 ? yieldAt12 : yieldAt8;
+    inScopeCases = yieldAtActiveThreshold.available ? yieldAtActiveThreshold.cases : null;
+    inScopeValue = yieldAtActiveThreshold.available ? yieldAtActiveThreshold.value : null;
+    inScopeDurationLabel = `${threshold}+ weeks`;
+  }
 
   // Percentages for visual progress bars — each narrower than the last, so
   // the row reads left to right as one narrowing story.
@@ -167,7 +204,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
 
         <div className="mt-4 pt-2.5 border-t border-neutral-100 flex items-center justify-between">
           <span className="text-sm sm:text-base font-bold text-neutral-700">
-            {threshold}+ weeks (DfE published)
+            {pastThresholdLabel}
           </span>
         </div>
       </div>
@@ -202,8 +239,8 @@ export const KPICards: React.FC<KPICardsProps> = ({
         </div>
 
         <div className="mt-4 pt-2.5 border-t border-neutral-100 flex items-center justify-between">
-          <span className="text-sm sm:text-base font-bold text-neutral-700 truncate" title={`${tierSubtitle}, ${threshold}+ weeks`}>
-            {tierSubtitle}, {threshold}+ weeks
+          <span className="text-sm sm:text-base font-bold text-neutral-700 truncate" title={`${tierSubtitle}, ${inScopeDurationLabel}`}>
+            {tierSubtitle}, {inScopeDurationLabel}
           </span>
         </div>
       </div>
