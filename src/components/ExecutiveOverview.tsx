@@ -156,6 +156,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
       // target8p * effectiveValPerCase.
       const laYield = computeSelectionYield([la], filters.selectedTerm, calculatorParams);
       const recovery = laYield.available ? laYield.value : null;
+      const cases = laYield.available ? laYield.cases : null;
       const rate = parseRatePer100(d?.ratePer100Published);
       return {
         code: la.code,
@@ -164,6 +165,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
         totalCME: count,
         target8Plus: target8p,
         recovery,
+        cases,
         rate,
       };
     })
@@ -618,7 +620,23 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
                       <h4 className="text-sm sm:text-base font-bold text-[#1C1C1C] group-hover:text-[#FE5729] transition-colors truncate">
                         {la.name}
                       </h4>
-                      <span className="text-xs text-neutral-400 block truncate">{la.region} • {formatUKNumber(la.totalCME)} CME</span>
+                      <span className="text-xs text-neutral-400 block truncate">
+                        {la.region} • {formatUKNumber(la.totalCME)} CME
+                        {la.rate != null && (
+                          <>
+                            {' • '}
+                            {nationalRate != null && (
+                              <span
+                                className={`font-bold ${la.rate > nationalRate ? 'text-rose-500' : la.rate < nationalRate ? 'text-emerald-500' : 'text-neutral-400'}`}
+                                title={`${la.rate > nationalRate ? 'Above' : la.rate < nationalRate ? 'Below' : 'At'} the national rate of ${nationalRate.toFixed(2)} per 100`}
+                              >
+                                {la.rate > nationalRate ? '▲' : la.rate < nationalRate ? '▼' : '—'}{' '}
+                              </span>
+                            )}
+                            {la.rate.toFixed(2)} / 100
+                          </>
+                        )}
+                      </span>
                     </div>
                   </div>
 
@@ -631,20 +649,10 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
                       )}
                     </span>
                     <span className="font-medium text-neutral-500 text-xs sm:text-sm block">
-                      {la.rate == null ? (
+                      {la.cases == null ? (
                         <span className="text-neutral-400 text-xs">Not published</span>
                       ) : (
-                        <>
-                          {nationalRate != null && (
-                            <span
-                              className={`mr-1 text-[10px] font-bold ${la.rate > nationalRate ? 'text-rose-600' : la.rate < nationalRate ? 'text-emerald-600' : 'text-neutral-400'}`}
-                              title={`${la.rate > nationalRate ? 'Above' : la.rate < nationalRate ? 'Below' : 'At'} the national rate of ${nationalRate.toFixed(2)} per 100`}
-                            >
-                              {la.rate > nationalRate ? '▲' : la.rate < nationalRate ? '▼' : '—'}
-                            </span>
-                          )}
-                          {la.rate.toFixed(2)} / 100
-                        </>
+                        `${formatUKNumber(la.cases)} ${la.cases === 1 ? 'case' : 'cases'}`
                       )}
                     </span>
                   </div>
