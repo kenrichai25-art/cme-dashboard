@@ -52,7 +52,7 @@ import {
   REASON_DATA_UNAVAILABLE_MESSAGE,
   computeSelectionYield
 } from '../data/cmeData';
-import { scopeCohort, buildReasonTable, computeYield, SCOPE_TIERS } from '../data/cmeScope';
+import { scopeCohort, buildReasonTable, computeYield, parseCell, SCOPE_TIERS } from '../data/cmeScope';
 import officialDataJson from '../data/officialDfeData.json';
 import { ReasonDataUnavailable } from './ReasonDataUnavailable';
 import { EstimateMarker } from './stratos/EstimateMarker';
@@ -255,7 +255,21 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
   // not the dashboard's selected-tiers total — so the panel can show what
   // each tier is individually worth. Not in scope never counts toward yield,
   // so it carries no £ figure at all rather than a computed zero.
+  // "Other" is DfE's own unclassified reason category, folded into Not in
+  // scope along with 15 named categories. Its size is worth surfacing on
+  // its own — nationally it's larger than "Believed moved abroad" — but it
+  // carries no £ figure or duration estimate: DfE don't break it down
+  // further, so nothing beyond its published count and share is knowable.
+  const otherCell = parseCell(publishedBreakdown.reasons?.['Other']?.count);
+  const otherReasonNote =
+    otherCell.value == null
+      ? null
+      : `Includes "Other" (DfE's own unclassified category, not broken down further): ${formatUKNumber(otherCell.value)}${
+          scopedCohort.totalCME > 0 ? ` (${((otherCell.value / scopedCohort.totalCME) * 100).toFixed(1)}%)` : ''
+        }`;
+
   const tierData = scopedCohort.tiers.map((t) => ({
+    id: t.tier.id,
     name: t.tier.label,
     count: t.publishedCount,
     percent:
@@ -711,6 +725,12 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
                     <span className="text-neutral-400">({reason.percent}%)</span>
                   </span>
                 </div>
+
+                {reason.id === 'outOfScope' && otherReasonNote && (
+                  <div className="mt-2 pt-2 border-t border-neutral-100 text-[11px] text-neutral-500">
+                    {otherReasonNote} — published count only, no duration or £ estimate.
+                  </div>
+                )}
               </div>
             ))}
           </div>
