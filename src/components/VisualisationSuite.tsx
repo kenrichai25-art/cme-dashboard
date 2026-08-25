@@ -13,6 +13,7 @@ import {
   Legend,
   Line,
   ComposedChart,
+  LabelList,
 } from 'recharts';
 import { 
   TrendingUp, 
@@ -507,11 +508,11 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
       </div>
 
       {/* Visualisation 2: Ranking & Geographic Distribution (5 cols) */}
-      <div 
+      <div
         id="chart-card-ranking"
         className="lg:col-span-5 bg-white p-6 rounded-3xl border border-neutral-200/80 shadow-sm flex flex-col justify-between"
       >
-        <div>
+        <div className="flex-1 flex flex-col">
           <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
             <div>
               <h3 className="text-sm font-extrabold text-[#1C1C1C] flex items-center gap-2 font-display">
@@ -543,12 +544,13 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
             </div>
           </div>
 
-          <div className="h-64 sm:h-72 w-full mt-5">
+          <div className="flex-1 min-h-[280px] sm:min-h-[340px] w-full mt-5">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 layout="vertical"
                 data={rankingMode === 'la' ? displayedLAs : regionalData}
-                margin={{ top: 0, right: 35, left: 75, bottom: 0 }}
+                margin={{ top: 0, right: 70, left: 75, bottom: 0 }}
+                barCategoryGap="28%"
               >
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                 <XAxis type="number" tick={{ fontSize: 10, fill: '#737373' }} tickFormatter={(val) => val >= 1000 ? `${(val/1000).toFixed(0)}k` : val} />
@@ -567,9 +569,9 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
                     'CME Caseload',
                   ]}
                 />
-                <Bar 
-                  dataKey="displayCount" 
-                  radius={[0, 6, 6, 0]} 
+                <Bar
+                  dataKey="displayCount"
+                  radius={[0, 6, 6, 0]}
                   cursor="pointer"
                   onClick={(data: any) => {
                     if (rankingMode === 'la' && data?.code) {
@@ -581,14 +583,20 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
                     <Cell
                       key={`cell-${index}`}
                       fill={
-                        entry.isSelected 
-                          ? '#FE5729' 
-                          : index === 0 
-                          ? '#1C1C1C' 
+                        entry.isSelected
+                          ? '#FE5729'
+                          : index === 0
+                          ? '#1C1C1C'
                           : '#6366f1'
                       }
                     />
                   ))}
+                  <LabelList
+                    dataKey="recoveryYield"
+                    position="right"
+                    formatter={(value: number | null) => (value == null ? '—' : formatGBP(value, true))}
+                    style={{ fontSize: 10, fontWeight: 700, fill: '#047857' }}
+                  />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
