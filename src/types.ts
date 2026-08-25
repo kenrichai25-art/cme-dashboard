@@ -141,7 +141,6 @@ export interface TableColumnSort {
     | 'name'
     | 'code'
     | 'region'
-    | 'ratePer100'
     | 'totalCME'
     | 'targetCases8Plus'
     | 'recoveryYield'
