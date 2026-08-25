@@ -340,6 +340,8 @@ export default function App() {
         onOpenMethodology={() => setIsMethodologyOpen(true)}
         onOpenApiExplorer={() => setIsApiExplorerOpen(true)}
         onExportCurrentView={handleExportCSV}
+        calculatorParams={calculatorParams}
+        onChangeCalculatorParams={setCalculatorParams}
       />
 
       {/* Syncing Progress Banner (if active) */}

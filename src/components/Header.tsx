@@ -18,8 +18,9 @@ import {
   Download
 } from 'lucide-react';
 import { DfeApiStatus } from '../services/dfeApiService';
-import { MainDashboardTab } from '../types';
+import { MainDashboardTab, CalculatorParams } from '../types';
 import { TOTAL_AUTHORITIES_COUNT } from '../data/cmeData';
+import { ScopeTierToggle } from './ScopeTierToggle';
 
 interface HeaderProps {
   apiStatus: DfeApiStatus | null;
@@ -30,6 +31,8 @@ interface HeaderProps {
   onOpenMethodology: () => void;
   onOpenApiExplorer: () => void;
   onExportCurrentView: () => void;
+  calculatorParams: CalculatorParams;
+  onChangeCalculatorParams: (params: CalculatorParams) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -41,6 +44,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenMethodology,
   onOpenApiExplorer,
   onExportCurrentView,
+  calculatorParams,
+  onChangeCalculatorParams,
 }) => {
   return (
     <header className="bg-white border-b border-neutral-200/80 shadow-xs sticky top-0 z-30">
@@ -270,6 +275,16 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Help</span>
             </button>
           </nav>
+        </div>
+
+        {/* Persistent Scope Tier control — visible on every tab, since
+            calculatorParams.includeTiers drives every £ estimate in the
+            app (KPI cards, charts, LA table, Financial Impact). */}
+        <div className="mt-3 pt-3 border-t border-neutral-100">
+          <ScopeTierToggle
+            calculatorParams={calculatorParams}
+            onChangeCalculatorParams={onChangeCalculatorParams}
+          />
         </div>
       </div>
     </header>
