@@ -130,9 +130,6 @@ export const DataTable: React.FC<DataTableProps> = ({
       const w12pA = Math.round((typeof dataA?.durationWeeks?.weeks12Plus === 'number' ? dataA.durationWeeks.weeks12Plus : 0) * factorA);
       const w12pB = Math.round((typeof dataB?.durationWeeks?.weeks12Plus === 'number' ? dataB.durationWeeks.weeks12Plus : 0) * factorB);
 
-      const w1_8A = Math.round((typeof dataA?.durationWeeks?.weeks1To8 === 'number' ? dataA.durationWeeks.weeks1To8 : 0) * factorA);
-      const w1_8B = Math.round((typeof dataB?.durationWeeks?.weeks1To8 === 'number' ? dataB.durationWeeks.weeks1To8 : 0) * factorB);
-
       const target8PlusA = w8_12A + w12pA;
       const target8PlusB = w8_12B + w12pB;
 
@@ -185,10 +182,6 @@ export const DataTable: React.FC<DataTableProps> = ({
         case 'weeks12Plus':
           valA = w12pA;
           valB = w12pB;
-          break;
-        case 'weeks1To8':
-          valA = w1_8A;
-          valB = w1_8B;
           break;
         default:
           valA = yieldA;
@@ -403,20 +396,6 @@ export const DataTable: React.FC<DataTableProps> = ({
                 </div>
               </th>
 
-              {/* Duration Breakdown Columns */}
-              <th
-                onClick={() => handleSort('weeks1To8')}
-                className={`py-2.5 px-2.5 text-right cursor-pointer hover:bg-neutral-200/60 transition-colors whitespace-nowrap text-neutral-500 ${
-                  durationFilter === '1-8' ? 'bg-sky-100 text-sky-900 font-bold' : ''
-                }`}
-                title="CME missing 1 to 8 weeks (Early stage)"
-              >
-                <div className="flex items-center justify-end space-x-1">
-                  <span className="leading-tight block">1–8<br />Weeks</span>
-                  {getSortIcon('weeks1To8')}
-                </div>
-              </th>
-
               <th className="py-2.5 px-3.5 text-right whitespace-nowrap">
                 <span className="leading-tight block">Action<br />Record</span>
               </th>
@@ -426,7 +405,7 @@ export const DataTable: React.FC<DataTableProps> = ({
           <tbody className="divide-y divide-neutral-100 text-neutral-700">
             {paginatedData.length === 0 ? (
               <tr>
-                <td colSpan={11} className="py-12 text-center text-neutral-400 font-medium">
+                <td colSpan={10} className="py-12 text-center text-neutral-400 font-medium">
                   No Local Authorities match the current search filters.
                 </td>
               </tr>
@@ -444,8 +423,6 @@ export const DataTable: React.FC<DataTableProps> = ({
                 const w8_12 = Math.round(rawW8_12 * factor);
                 const rawW12p = typeof d?.durationWeeks?.weeks12Plus === 'number' ? d.durationWeeks.weeks12Plus : 0;
                 const w12p = Math.round(rawW12p * factor);
-                const rawW1_8 = typeof d?.durationWeeks?.weeks1To8 === 'number' ? d.durationWeeks.weeks1To8 : 0;
-                const w1_8 = Math.round(rawW1_8 * factor);
 
                 const target8Plus = w8_12 + w12p;
                 const rowYield = yieldByLACode.get(la.code);
@@ -541,11 +518,6 @@ export const DataTable: React.FC<DataTableProps> = ({
                           Not published
                         </span>
                       )}
-                    </td>
-
-                    {/* 8. 1-8 Weeks Duration */}
-                    <td className="py-3 px-2.5 text-right text-neutral-500 font-medium text-xs sm:text-sm">
-                      {formatUKNumber(w1_8)}
                     </td>
 
                     {/* 10. Actions */}

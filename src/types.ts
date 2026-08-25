@@ -51,7 +51,7 @@ export type OfficialDfeDuration =
   | 'Over 52 weeks'
   | 'Unknown';
 
-export type DurationBracket = 'all' | '1-8' | '8-12' | '12+';
+export type DurationBracket = 'all' | '8-12' | '12+';
 
 export interface AgeCohortBreakdown {
   primaryKS1_KS2: number; // Compulsory primary (age 5-11)
@@ -130,7 +130,7 @@ export interface FilterState {
   selectedRegion: Region;
   selectedLACode: string | null; // null for National or Regional aggregate
   selectedTerm: AcademicTerm;
-  durationFilter: DurationBracket; // 'all' | '1-8' | '8-12' | '12+'
+  durationFilter: DurationBracket; // 'all' | '8-12' | '12+'
   compareBenchmark: boolean;
   benchmarkType: 'national' | 'regional';
   searchQuery: string;
@@ -145,7 +145,6 @@ export interface TableColumnSort {
     | 'totalCME'
     | 'targetCases8Plus'
     | 'recoveryYield'
-    | 'weeks1To8'
     | 'weeks8To12'
     | 'weeks12Plus'
     | 'longTermMissingPercent';

@@ -73,7 +73,6 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
   const durationOptions: { id: DurationBracket; label: string; countHint?: string }[] = [
     { id: 'all', label: 'All Durations (1+ wks)' },
-    { id: '1-8', label: '1–8 Weeks' },
     { id: '8-12', label: '8–12 Weeks' },
     { id: '12+', label: '12+ Weeks (Persistent)' },
   ];
@@ -277,7 +276,6 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           {durationOptions.map((opt) => {
             const isSelected = filters.durationFilter === opt.id;
             let activeStyle = 'bg-[#1C1C1C] text-white font-bold shadow-xs';
-            if (opt.id === '1-8') activeStyle = 'bg-sky-700 text-white font-bold shadow-xs';
             if (opt.id === '8-12') activeStyle = 'bg-amber-600 text-white font-bold shadow-xs';
             if (opt.id === '12+') activeStyle = 'bg-rose-600 text-white font-bold shadow-xs';
 

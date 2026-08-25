@@ -248,7 +248,7 @@ export const StratosDataBridge: React.FC<StratosDataBridgeProps> = ({
             </div>
 
             <p className="text-xs text-neutral-600 mt-3 leading-relaxed">
-              Export the current {DFE_EES_CONFIG.totalEnglandLAs} Local Authorities combined dataset including all duration counts (1–8w, 8–12w, 12+w), risk tiers, and calculated financial recovery projections.
+              Export the current {DFE_EES_CONFIG.totalEnglandLAs} Local Authorities combined dataset including all duration counts (8–12w, 12+w), risk tiers, and calculated financial recovery projections.
             </p>
           </div>
 

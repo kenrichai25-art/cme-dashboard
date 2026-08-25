@@ -188,7 +188,6 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
         .replace('2024/25 Summer', 'Sum 25')
         .replace('2025/26 Autumn', 'Aut 25'),
       totalCME: typeof d?.totalCME === 'number' ? d.totalCME : 0,
-      weeks1To8: typeof d?.durationWeeks?.weeks1To8 === 'number' ? d.durationWeeks.weeks1To8 : 0,
       weeks8To12: typeof d?.durationWeeks?.weeks8To12 === 'number' ? d.durationWeeks.weeks8To12 : 0,
       weeks12Plus: typeof d?.durationWeeks?.weeks12Plus === 'number' ? d.durationWeeks.weeks12Plus : 0,
       recoveryYield: termYield,

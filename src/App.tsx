@@ -259,7 +259,6 @@ export default function App() {
       'Target 12+ Weeks (Persistent) Count',
       'Actionable Target Cohort (8+ Wks)',
       'Modelled Recovery Yield (£)',
-      'Missing 1-8 Weeks Count',
       'Primary Recorded Cause',
     ];
 
@@ -269,8 +268,6 @@ export default function App() {
 
       const rawTotal = typeof d?.totalCME === 'number' ? d.totalCME : 0;
       const totalCME = Math.round(rawTotal * factor);
-      const rawW1_8 = typeof d?.durationWeeks?.weeks1To8 === 'number' ? d.durationWeeks.weeks1To8 : 0;
-      const w1_8 = Math.round(rawW1_8 * factor);
       const rawW8_12 = typeof d?.durationWeeks?.weeks8To12 === 'number' ? d.durationWeeks.weeks8To12 : 0;
       const w8_12 = Math.round(rawW8_12 * factor);
       const rawW12p = typeof d?.durationWeeks?.weeks12Plus === 'number' ? d.durationWeeks.weeks12Plus : 0;
@@ -315,7 +312,6 @@ export default function App() {
         d?.durationWeeks?.weeks12Plus === 'c' ? '"c (<5)"' : w12p,
         target8Plus,
         recoveryYield === null ? `"${REASON_DATA_UNAVAILABLE_MESSAGE}"` : recoveryYield,
-        d?.durationWeeks?.weeks1To8 === 'c' ? '"c (<5)"' : w1_8,
         `"${topReason}"`,
       ].join(',');
     });
@@ -413,7 +409,7 @@ export default function App() {
                   <span className="w-2.5 h-2.5 rounded-full bg-[#FE5729] animate-pulse flex-shrink-0" />
                   <div>
                     <span className="font-extrabold text-[#FE5729]">
-                      Duration Filter Active: {filters.durationFilter === '1-8' ? '1–8 Weeks (Initial Stage)' : filters.durationFilter === '8-12' ? '8–12 Weeks (Medium Term)' : '12+ Weeks (Persistent / Chronic)'}
+                      Duration Filter Active: {filters.durationFilter === '8-12' ? '8–12 Weeks (Medium Term)' : '12+ Weeks (Persistent / Chronic)'}
                     </span>
                     <p className="text-[11px] text-neutral-600 mt-0.5">
                       All case counts, longitudinal trajectory trends, regional comparisons, statutory reasons, and tables are focused on this duration cohort.

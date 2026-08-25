@@ -85,13 +85,13 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onNavigateTab }) => {
       oneLiner: 'Deep-dive charts and benchmark comparisons across durations, causes, and age groups.',
       purpose: 'Allows analysts and education officers to benchmark any local council against regional and national averages.',
       whatYouSee: [
-        'Duration Breakdown (1–8 weeks, 8–12 weeks, 12+ weeks).',
+        'Duration Breakdown (8–12 weeks, 12+ weeks).',
         'Benchmark Comparison bars showing how a council compares to the England average.',
         'Statutory Reason categories (e.g., Awaiting School Place, Moved Abroad, Untraceable).',
         'Age Group distributions (Primary Key Stage 1–2 vs. Secondary Key Stage 3–4).',
       ],
       howToUse: [
-        'Use the Duration Pills (1–8w, 8–12w, 12+w) to focus charts on specific absence lengths.',
+        'Use the Duration Pills (8–12w, 12+w) to focus charts on specific absence lengths.',
         'Click on any bar chart or local authority to inspect individual trends.',
       ],
     },

@@ -116,9 +116,7 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
     const modeledYieldVal = termYield.available ? termYield.value : null;
 
     let activeCohortCount = agg.totalCME;
-    if (durationFilter === '1-8') {
-      activeCohortCount = agg.durationWeeks.weeks1To8;
-    } else if (durationFilter === '8-12') {
+    if (durationFilter === '8-12') {
       activeCohortCount = agg.durationWeeks.weeks8To12;
     } else if (durationFilter === '12+') {
       activeCohortCount = agg.durationWeeks.weeks12Plus;
@@ -129,7 +127,6 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
       shortTerm,
       totalCME: agg.totalCME,
       activeCohortCount,
-      weeks1To8: agg.durationWeeks.weeks1To8,
       weeks8To12: agg.durationWeeks.weeks8To12,
       weeks12Plus: agg.durationWeeks.weeks12Plus,
       actionableTargetCount,
@@ -146,7 +143,6 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
     .map((la) => {
       const data = la.termsData[termForComparison];
       const count = typeof data?.totalCME === 'number' ? data.totalCME : 0;
-      const w1_8 = typeof data?.durationWeeks?.weeks1To8 === 'number' ? data.durationWeeks.weeks1To8 : 0;
       const w8_12 = typeof data?.durationWeeks?.weeks8To12 === 'number' ? data.durationWeeks.weeks8To12 : 0;
       const w12p = typeof data?.durationWeeks?.weeks12Plus === 'number' ? data.durationWeeks.weeks12Plus : 0;
       const target8Plus = w8_12 + w12p;
@@ -157,9 +153,7 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
       const recoveryYield = laYield.available ? laYield.value : null;
 
       let displayCount = target8Plus;
-      if (durationFilter === '1-8') {
-        displayCount = w1_8;
-      } else if (durationFilter === '8-12') {
+      if (durationFilter === '8-12') {
         displayCount = w8_12;
       } else if (durationFilter === '12+') {
         displayCount = w12p;
@@ -175,7 +169,6 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
         displayCount,
         target8Plus,
         recoveryYield,
-        weeks1To8: w1_8,
         weeks8To12: w8_12,
         weeks12Plus: w12p,
         isSelected: currentLA?.code === la.code,
@@ -202,9 +195,7 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
     const yieldVal = regionYield.available ? regionYield.value : null;
 
     let displayCount = target8Plus;
-    if (durationFilter === '1-8') {
-      displayCount = agg.durationWeeks.weeks1To8;
-    } else if (durationFilter === '8-12') {
+    if (durationFilter === '8-12') {
       displayCount = agg.durationWeeks.weeks8To12;
     } else if (durationFilter === '12+') {
       displayCount = agg.durationWeeks.weeks12Plus;
@@ -230,7 +221,6 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
       target8Plus,
       recoveryYield: yieldVal,
       barLabel,
-      weeks1To8: agg.durationWeeks.weeks1To8,
       weeks8To12: agg.durationWeeks.weeks8To12,
       weeks12Plus: agg.durationWeeks.weeks12Plus,
       isSelected: filters.selectedRegion === region,
@@ -333,17 +323,6 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
       nationalPercent: nationalStats.totalCME > 0 ? Number(((nationalStats.durationWeeks.weeks12Plus / nationalStats.totalCME) * 100).toFixed(1)) : 0,
       description: 'Severe chronic CME & untraceable cases out of school roll for over a full term',
     },
-    {
-      id: '1-8' as DurationBracket,
-      name: 'Under 8 Weeks (<2w, 2–4w, 4–8w)',
-      shortLabel: '1–8 Wks',
-      count: currentStats.durationWeeks.weeks1To8,
-      yieldVal: 0,
-      percent: currentStats.totalCME > 0 ? Number(((currentStats.durationWeeks.weeks1To8 / currentStats.totalCME) * 100).toFixed(1)) : 0,
-      color: '#0ea5e9',
-      nationalPercent: nationalStats.totalCME > 0 ? Number(((nationalStats.durationWeeks.weeks1To8 / nationalStats.totalCME) * 100).toFixed(1)) : 0,
-      description: 'Initial school place referral, in-year application, or recent residential move',
-    },
   ];
 
   const activeDurationConfig = DURATION_CONFIG[durationFilter];
@@ -403,30 +382,26 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
                   <defs>
                     <linearGradient id="cmeGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop 
-                        offset="5%" 
+                        offset="5%"
                         stopColor={
-                          durationFilter === '1-8' 
-                            ? '#0ea5e9' 
-                            : durationFilter === '8-12' 
-                            ? '#f59e0b' 
-                            : durationFilter === '12+' 
-                            ? '#e11d48' 
+                          durationFilter === '8-12'
+                            ? '#f59e0b'
+                            : durationFilter === '12+'
+                            ? '#e11d48'
                             : '#FE5729'
-                        } 
-                        stopOpacity={0.25} 
+                        }
+                        stopOpacity={0.25}
                       />
-                      <stop 
-                        offset="95%" 
+                      <stop
+                        offset="95%"
                         stopColor={
-                          durationFilter === '1-8' 
-                            ? '#0ea5e9' 
-                            : durationFilter === '8-12' 
-                            ? '#f59e0b' 
-                            : durationFilter === '12+' 
-                            ? '#e11d48' 
+                          durationFilter === '8-12'
+                            ? '#f59e0b'
+                            : durationFilter === '12+'
+                            ? '#e11d48'
                             : '#FE5729'
-                        } 
-                        stopOpacity={0.0} 
+                        }
+                        stopOpacity={0.0}
                       />
                     </linearGradient>
                   </defs>
@@ -453,14 +428,12 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
                     dataKey="activeCohortCount" 
                     name={durationFilter === 'all' ? 'Total CME Cohort' : `${activeDurationConfig?.shortLabel} Caseload`} 
                     stroke={
-                      durationFilter === '1-8' 
-                        ? '#0ea5e9' 
-                        : durationFilter === '8-12' 
-                        ? '#f59e0b' 
-                        : durationFilter === '12+' 
-                        ? '#e11d48' 
+                      durationFilter === '8-12'
+                        ? '#f59e0b'
+                        : durationFilter === '12+'
+                        ? '#e11d48'
                         : '#FE5729'
-                    } 
+                    }
                     strokeWidth={2.5} 
                     fillOpacity={1} 
                     fill="url(#cmeGradient)" 
@@ -486,7 +459,6 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
                     formatter={(value: any) => [formatUKNumber(value) + ' pupils']}
                   />
                   <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '11px' }} />
-                  <Bar dataKey="weeks1To8" name="Under 8 Wks" stackId="a" fill="#0ea5e9" />
                   <Bar dataKey="weeks8To12" name="8–12 Wks" stackId="a" fill="#f59e0b" />
                   <Bar dataKey="weeks12Plus" name="12+ Wks (Chronic)" stackId="a" fill="#e11d48" radius={[4, 4, 0, 0]} />
                 </BarChart>

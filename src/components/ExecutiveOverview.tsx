@@ -114,7 +114,6 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
       totalCME: agg.totalCME,
       weeks12Plus: agg.durationWeeks.weeks12Plus,
       weeks8To12: agg.durationWeeks.weeks8To12,
-      weeks1To8: agg.durationWeeks.weeks1To8,
       ratePer100Published: agg.ratePer100Published,
     };
   });

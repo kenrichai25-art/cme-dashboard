@@ -36,15 +36,6 @@ export const DURATION_CONFIG = {
     color: '#4f46e5',
     accentBg: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   },
-  '1-8': {
-    id: '1-8',
-    label: 'Under 8 Weeks (<2w, 2–4w, 4–8w)',
-    shortLabel: '1–8 Wks',
-    filterDescription: 'Early stage missing cases, incoming residential moves, and in-year school admissions',
-    badgeText: 'Under 8 Weeks (Early Stage)',
-    color: '#0ea5e9',
-    accentBg: 'bg-sky-50 text-sky-700 border-sky-200',
-  },
   '8-12': {
     id: '8-12',
     label: '8–12 Weeks (Medium Term)',
