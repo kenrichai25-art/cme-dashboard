@@ -285,6 +285,7 @@ export const VisualisationSuite: React.FC<VisualisationSuiteProps> = ({
           recoveryPerCase: calculatorParams.recoveryPerCase,
           strikeRate: calculatorParams.strikeRate,
           includeTiers: [t.tier.id],
+          childrenPerCase: calculatorParams.childrenPerCase,
         }).value
       : null,
   }));

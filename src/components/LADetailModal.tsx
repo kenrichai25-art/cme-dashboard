@@ -113,6 +113,7 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
   const strikeRate = calculatorParams.strikeRate;
   const includeTiers = calculatorParams.includeTiers ?? ['abroad'];
   const durationThreshold = calculatorParams.durationThreshold ?? 8;
+  const childrenPerCase = calculatorParams.childrenPerCase ?? 1;
 
   const rawTotalCme = parseDfENumber(currentTermData?.totalCME, 0);
 
@@ -135,6 +136,7 @@ export const LADetailModal: React.FC<LADetailModalProps> = ({
     recoveryPerCase,
     strikeRate,
     includeTiers,
+    childrenPerCase,
   });
 
   const targetCases = scopedYield.cases;

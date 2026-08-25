@@ -356,6 +356,7 @@ export interface SelectionYieldParams {
   strikeRate: number;
   includeTiers?: ScopeTierId[];
   durationThreshold?: DurationThreshold;
+  childrenPerCase?: number;
 }
 
 export interface SelectionYield {
@@ -413,6 +414,7 @@ export function computeSelectionYield(
       recoveryPerCase: params.recoveryPerCase,
       strikeRate: params.strikeRate,
       includeTiers: params.includeTiers,
+      childrenPerCase: params.childrenPerCase,
     });
     cases += result.cases;
     value += result.value;

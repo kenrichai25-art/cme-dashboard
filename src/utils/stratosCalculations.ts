@@ -18,6 +18,9 @@ export const DEFAULT_CALCULATOR_PARAMS: CalculatorParams = {
   // entitlement for a claimant abroad generally ends after 8 weeks.
   includeTiers: ['abroad'],
   durationThreshold: 8,
+  // 1 child per case: no adjustment, matching every figure in the app
+  // before the children-per-case control existed.
+  childrenPerCase: 1,
 };
 
 export const RISK_TIER_CONFIG = {
@@ -98,6 +101,7 @@ export function computeSTRATOSLEAs(
     strikeRate,
     includeTiers = ['abroad'],
     durationThreshold = 8,
+    childrenPerCase = 1,
   } = params;
   const effectiveValuePerCase = recoveryPerCase * strikeRate;
 
@@ -142,8 +146,9 @@ export function computeSTRATOSLEAs(
       recoveryPerCase,
       strikeRate,
       includeTiers,
+      childrenPerCase,
     });
-    const yieldAt12 = computeYield(cohortAt12, { recoveryPerCase, strikeRate, includeTiers });
+    const yieldAt12 = computeYield(cohortAt12, { recoveryPerCase, strikeRate, includeTiers, childrenPerCase });
 
     // Split the scoped yield across the published bands. At a 12-week threshold
     // the 8–12 band is out of scope entirely, so it contributes nothing.

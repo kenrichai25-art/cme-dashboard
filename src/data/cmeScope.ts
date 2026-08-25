@@ -280,6 +280,15 @@ export interface YieldParams {
   strikeRate: number;
   /** Tiers to include. Defaults to abroad only. */
   includeTiers?: ScopeTierId[];
+  /**
+   * Child Benefit is claimed once per family, not once per child, so a
+   * family with more than one dependent child inflates the child count
+   * relative to the number of claims actually worked. Divides the estimated
+   * child count down to an estimated claim count before pricing. Defaults
+   * to 1 (no adjustment — cases == children), matching every figure in the
+   * app before this control existed.
+   */
+  childrenPerCase?: number;
 }
 
 export interface YieldResult {
@@ -293,9 +302,12 @@ export interface YieldResult {
 
 export function computeYield(cohort: ScopedCohort, params: YieldParams): YieldResult {
   const include = params.includeTiers ?? ['abroad'];
-  const cases = cohort.tiers
+  const childCount = cohort.tiers
     .filter((t) => t.tier.countsTowardYield && include.includes(t.tier.id))
     .reduce((sum, t) => sum + t.estimatedAtThreshold, 0);
+
+  const childrenPerCase = params.childrenPerCase && params.childrenPerCase > 0 ? params.childrenPerCase : 1;
+  const cases = Math.round(childCount / childrenPerCase);
 
   const effective = params.recoveryPerCase * params.strikeRate;
 

@@ -163,6 +163,10 @@ export interface CalculatorParams {
   includeTiers?: ScopeTierId[];
   /** Duration threshold in weeks for the Child Benefit absence rule. */
   durationThreshold?: DurationThreshold;
+  /** Dependent children per family, used to convert an estimated child count
+   *  into an estimated claim count before pricing (Child Benefit is claimed
+   *  once per family). Defaults to 1 (no adjustment). */
+  childrenPerCase?: number;
 }
 
 export interface LEARawData {
